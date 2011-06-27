@@ -1,22 +1,22 @@
-class UInt32(v: Long) {
-  assert(v >= 0)
-  assert(v < 4294967296L)
-  val value = v
-  def toByteArray : Array[Byte] = {
-    val byteArray = new Array[Byte](4)
-    byteArray(0) = ((value >> 24) & 0xff).toByte
-    byteArray(1) = ((value >> 16) & 0xff).toByte
-    byteArray(2) = ((value >> 8) & 0xff).toByte
-    byteArray(3) = (value & 0xff).toByte
-    byteArray
-  }
+package org.unixuser.haruyama.ssh.datatype
 
+case class UInt32(value: Long) extends Type {
+  assert(value >= 0)
+  assert(value < 4294967296L)
+
+
+  def toBytes: Array[Byte] = {
+    val bytes= new Array[Byte](4)
+    bytes(0) = ((value >> 24) & 0xff).toByte
+    bytes(1) = ((value >> 16) & 0xff).toByte
+    bytes(2) = ((value >> 8) & 0xff).toByte
+    bytes(3) = (value & 0xff).toByte
+    bytes
+  }
 }
 
 object UInt32 {
-  def parse(message: Array[Byte], offset: Int) : (UInt32, Int) = {
-    val value = ((message(offset) & 0xff).toLong << 24) + ((message(offset + 1) & 0xff).toLong << 16) + ((message(offset + 2) & 0xff).toLong <<
-      8) + (message(offset + 3) & 0xff).toLong
-    (new UInt32(value), offset + 4)
+  def toUInt32(bytes: Seq[Byte]) : UInt32 = {
+    new UInt32(((bytes(0) & 0xff).toLong << 24) + ((bytes(1) & 0xff).toLong << 16) + ((bytes(2) & 0xff).toLong << 8) + (bytes(3) & 0xff).toLong)
   }
 }
