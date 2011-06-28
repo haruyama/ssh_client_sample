@@ -1,6 +1,6 @@
 package org.unixuser.haruyama.ssh.datatype
 
-case class UInt32(value: Long) extends Type {
+case class UInt32(value: Long) extends DataType {
   assert(value >= 0)
   assert(value < 4294967296L)
 
