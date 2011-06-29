@@ -1,12 +1,14 @@
 package org.unixuser.haruyama.ssh.datatype
+import scala.collection.mutable.ArrayBuffer
 
 case class SSHString(value: String) extends SSHDataType {
 
   override def toBytes: Array[Byte] = {
-    val bytes= new Array[Byte](4 + value.length)
-    SSHUInt32(value.length).toBytes.copyToArray(bytes, 0)
-    value.getBytes.copyToArray(bytes, 4)
-    bytes
+    val byteArray = value.getBytes
+    val arrayBuffer = new ArrayBuffer[Byte](4 + byteArray.length)
+    arrayBuffer ++= SSHUInt32(byteArray.length).toBytes
+    arrayBuffer ++= byteArray
+    arrayBuffer.toArray
   }
 }
 
