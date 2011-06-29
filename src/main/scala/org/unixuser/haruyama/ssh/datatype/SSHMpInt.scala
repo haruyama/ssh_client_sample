@@ -12,8 +12,9 @@ case class SSHMpInt(value: BigInt) extends SSHDataType {
 
     val byteArray = value.toByteArray
     val arrayBuffer = new ArrayBuffer[Byte](4 + byteArray.length)
-    arrayBuffer ++= SSHUInt32(byteArray.length).toBytes
-    arrayBuffer ++= byteArray
+    for (e <- List(SSHUInt32(byteArray.length).toBytes, byteArray)) {
+      arrayBuffer ++= e
+    }
     arrayBuffer.toArray
   }
 }
