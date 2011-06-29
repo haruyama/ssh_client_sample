@@ -4,7 +4,7 @@ import org.unixuser.haruyama.ssh.parser._
 import org.unixuser.haruyama.ssh.datatype._
 import scala.util.parsing.combinator._
 
-case class ServiceRequest(messageId: Short, serviceName : String) {
+case class ServiceRequest(messageId: Short, serviceName : SSHString) {
   assert(messageId == 5)
 }
 
