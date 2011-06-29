@@ -4,7 +4,7 @@ import org.unixuser.haruyama.ssh.parser._
 import org.unixuser.haruyama.ssh.datatype._
 import scala.util.parsing.combinator._
 
-case class WindowAdjust(messageId: Byte,  recipientChannel : UInt32,  bytesToAdd :UInt32) {
+case class WindowAdjust(messageId: Byte,  recipientChannel : SSHUInt32,  bytesToAdd : SSHUInt32) {
   //TODO: どこかに定数をまとめる
   assert(messageId == 93)
 }

@@ -1,2 +1,4 @@
 package org.unixuser.haruyama.ssh.datatype
-abstract class DataType
+abstract class SSHDataType {
+  def toBytes : Array[Byte]
+}
