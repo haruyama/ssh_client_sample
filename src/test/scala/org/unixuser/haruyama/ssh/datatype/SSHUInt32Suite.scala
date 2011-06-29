@@ -8,6 +8,7 @@ class SSHUInt32Suite extends FunSuite {
     assert(SSHUInt32(0L).toBytes === Array[Byte](0, 0, 0, 0))
     assert(SSHUInt32(699921578L).toBytes === Array[Byte](0x29, 0xb7.toByte, 0xf4.toByte, 0xaa.toByte))
     assert(SSHUInt32(2147483648L).toBytes === Array[Byte](0x80.toByte, 0, 0, 0))
+    assert(SSHUInt32(4294967295L).toBytes === Array[Byte](255.toByte,255.toByte,255.toByte,255.toByte))
   }
 
   test("no uint32") {
