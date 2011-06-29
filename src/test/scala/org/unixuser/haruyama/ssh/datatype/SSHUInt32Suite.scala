@@ -2,7 +2,7 @@ package org.unixuser.haruyama.ssh.datatype
 import org.scalatest.FunSuite
 
 
-class UInt32Suite extends FunSuite {
+class SSHUInt32Suite extends FunSuite {
 
     test("tobytes") {
       assert(SSHUInt32(0L).toBytes === Array[Byte](0, 0, 0, 0))
