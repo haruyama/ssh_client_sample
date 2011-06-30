@@ -36,22 +36,22 @@ class UnencryptedTransport(in: InputStream, out: OutputStream, parser: Transport
 
   override def recvRawMessage() : Array[Byte] = {
     val lengthBytes = new Array[Byte](4)
-    if (in.read(lengthBytes, 0, 4) == -1) {
+    if (bin.read(lengthBytes, 0, 4) == -1) {
       throw new RuntimeException
     }
     val length = parseLength(lengthBytes)
-    val padding_length = in.read
+    val padding_length = bin.read
     if (padding_length == -1) {
       throw new RuntimeException
     }
     val message = new Array[Byte](length - padding_length - 1)
 
-    if (in.read(message, 0, length - padding_length - 1) == -1) {
+    if (bin.read(message, 0, length - padding_length - 1) == -1) {
       throw new RuntimeException
     }
     val padding = new Array[Byte](padding_length)
 
-    if (in.read(padding, 0, padding_length) == -1) {
+    if (bin.read(padding, 0, padding_length) == -1) {
       throw new RuntimeException
     }
     message
@@ -79,6 +79,7 @@ class UnencryptedTransport(in: InputStream, out: OutputStream, parser: Transport
       arrayBuffer ++= message
       arrayBuffer ++= padding
 
-      arrayBuffer.toArray
+      val bytes = arrayBuffer.toArray
+      bout.write(bytes, 0, bytes.length)
   }
 }
