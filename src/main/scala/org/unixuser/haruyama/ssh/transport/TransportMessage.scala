@@ -73,7 +73,7 @@ object TransportMessageMaker {
   }
 }
 
-object TransportMessageParser extends ByteParsers {
+class TransportMessageParser extends ByteParsers {
 
   def messageId(id : SSHByte)  : Parser[SSHByte] = {
     elem("messageId", (b:Byte)  => id.value.toByte == b) ^^ toSSHByte

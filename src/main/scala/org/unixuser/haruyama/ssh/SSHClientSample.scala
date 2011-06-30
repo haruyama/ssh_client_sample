@@ -24,10 +24,9 @@ object SSHClientSample {
 
           //以後はSSHのパケットのやりとり
           //まだ暗号化されていない
-          val unencryptedTransport = new UnencryptedTransport(in, out)
+          val unencryptedTransport = new UnencryptedTransport(in, out, new TransportMessageParser)
 
-          val serverRawKexint = unencryptedTransport.recvMessage
-          val serverKexinit = TransportMessageParser.parseAll(serverRawKexint).get
+          val serverKexinit = unencryptedTransport.recvMessage()
           println(serverKexinit)
           assert(serverKexinit.isInstanceOf[Kexinit])
 
@@ -38,8 +37,7 @@ object SSHClientSample {
             List("hmac-sha1"), List("hmac-sha1"),
             List("none"), List("none"),
             List(), List(), false)
-          val clientRawKexinit = clientKexinit.toBytes
-          unencryptedTransport.sendMessage(clientRawKexinit)
+          unencryptedTransport.sendMessage(clientKexinit)
         }
       }
     }
