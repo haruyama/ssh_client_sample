@@ -70,16 +70,18 @@ class UnencryptedTransport(in: InputStream, out: OutputStream, parser: Transport
       val packet_length = message.size + padding_length + 1
       val arrayBuffer = new ArrayBuffer[Byte](4 + packet_length)
 
-      val random = new SecureRandom();
+      val random = new SecureRandom
       val padding = new Array[Byte](padding_length)
       random.nextBytes(padding);
 
-      arrayBuffer ++= SSHUInt32(padding_length).toBytes
+      arrayBuffer ++= SSHUInt32(packet_length).toBytes
       arrayBuffer += ((padding_length) & 0xff).toByte
       arrayBuffer ++= message
       arrayBuffer ++= padding
 
       val bytes = arrayBuffer.toArray
+      println(bytes mkString " ")
       bout.write(bytes, 0, bytes.length)
+      bout.flush
   }
 }
