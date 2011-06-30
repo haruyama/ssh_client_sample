@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
 trait Message extends Product {
   def toBytes() : Array[Byte] = toBytes(this.productIterator)
 
-  protected def toBytes(s : TraversableOnce[Any]) : Array[Byte] = {
+  private def toBytes(s : TraversableOnce[Any]) : Array[Byte] = {
     val arrayBuffer = new ArrayBuffer[Byte]
     addArrayBuffer(s, arrayBuffer)
     arrayBuffer.toArray
