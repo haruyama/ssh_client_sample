@@ -1,12 +1,13 @@
 package org.unixuser.haruyama.ssh.datatype
 
 import scala.collection.mutable.ArrayBuffer
+import java.math.BigInteger
 
-case class SSHMpInt(value: BigInt) extends SSHDataType {
+case class SSHMpInt(value: BigInteger) extends SSHDataType {
 
   override def toBytes: Array[Byte] = {
 
-    if (value == 0) {
+    if (value == BigInteger.ZERO) {
       return Array[Byte](0, 0, 0, 0)
     }
 
