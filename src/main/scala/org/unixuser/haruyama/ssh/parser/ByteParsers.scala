@@ -16,7 +16,7 @@ trait ByteParsers extends Parsers {
   }
 
   def toSSHByte(byte: Byte) : SSHByte = {
-    SSHByte(byte)
+    SSHByte((byte & 0xff).toShort)
   }
 
   def toSSHString(bytes: Seq[Byte]) : SSHString = {

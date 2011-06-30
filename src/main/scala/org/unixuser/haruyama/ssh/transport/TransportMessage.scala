@@ -53,7 +53,7 @@ object TransportMessageMaker {
   compC2S: Seq[String], compS2C: Seq[String], langC2S: Seq[String],
   langS2C: Seq[String], firstKexPacketFollows: Boolean) : Kexinit = {
 
-    Kexinit(TransportConstant.SSH_MSG_KEXINIT, cookie.map(SSHByte(_)),
+    Kexinit(TransportConstant.SSH_MSG_KEXINIT, cookie.map(e => SSHByte((e & 0xff).toShort)),
       SSHNamedList(kexAlgo), SSHNamedList(serverHostKeyAlgo), SSHNamedList(encC2S),
       SSHNamedList(encS2C), SSHNamedList(macC2S), SSHNamedList(macS2C),
       SSHNamedList(compC2S), SSHNamedList(compS2C), SSHNamedList(langC2S),
@@ -86,7 +86,7 @@ object TransportMessageParser extends ByteParsers {
   lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~
   namedlist ~ namedlist ~ namedlist ~ namedlist ~ boolean ~ uint32 ^^
   {case id~cookie~kex~hostkey~encc2s~encs2c~macc2s~macs2c~compc2s~comps2c~langc2s~langs2c~first~reserved =>
-        Kexinit(id,cookie,kex,hostkey,encc2s,encs2c,macc2s,macs2c,compc2s,comps2c,langc2s,langs2c,first,reserved)
+    Kexinit(id,cookie,kex,hostkey,encc2s,encs2c,macc2s,macs2c,compc2s,comps2c,langc2s,langs2c,first,reserved)
   }
 
 
