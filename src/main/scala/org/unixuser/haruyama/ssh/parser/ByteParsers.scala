@@ -32,6 +32,10 @@ trait ByteParsers extends Parsers {
     SSHNamedList(new String(bytes.toArray).split(","))
   }
 
+  def toSSHMpInt(bytes: Seq[Byte]) : SSHMpInt = {
+    SSHMpInt(new java.math.BigInteger(bytes.toArray))
+  }
+
 
   lazy val elem: Parser[Elem] = elem("elem", _ => true)
   lazy val boolean : Parser[SSHBoolean] = elem ^^ toSSHBoolean
@@ -40,6 +44,7 @@ trait ByteParsers extends Parsers {
   //toInt のために完全に仕様通りではない
   lazy val string: Parser[SSHString] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHString
   lazy val namedlist: Parser[SSHNamedList] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHNamedList
+  lazy val mpint: Parser[SSHMpInt] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHMpInt
 
   def parse[T](p: Parser[T], in: Input): ParseResult[T] = p(in)
   def parse[T](p: Parser[T], bytes: Seq[Byte]): ParseResult[T] = parse(p, new ByteReader(bytes))
