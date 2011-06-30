@@ -6,7 +6,7 @@ import scala.util.parsing.combinator._
 import org.unixuser.haruyama.ssh.message.Message
 import java.security.SecureRandom
 
-abstract class TransportMessage extends Message
+trait TransportMessage extends Message
 
 object TransportConstant {
   val SSH_MSG_DISCONNECT      = SSHByte(1)
@@ -19,14 +19,13 @@ object TransportConstant {
   val SSH_MSG_NEWKEYS         = SSHByte(21)
 }
 
+
 case class Newkeys(messageId: SSHByte) extends TransportMessage {
   assert(messageId == TransportConstant.SSH_MSG_NEWKEYS)
-  override def toBytes() : Array[Byte] = toBytes(this.productIterator)
 }
 
 case class ServiceRequest(messageId: SSHByte, serviceName : SSHString) extends TransportMessage {
   assert(messageId == TransportConstant.SSH_MSG_SERVICE_REQUEST)
-  override def toBytes() : Array[Byte] = toBytes(this.productIterator)
 }
 
 case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNamedList,
@@ -37,7 +36,6 @@ case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNamedLi
   extends TransportMessage {
   assert(messageId == TransportConstant.SSH_MSG_KEXINIT)
   assert(cookie.length == 16)
-  override def toBytes() : Array[Byte] = toBytes(this.productIterator)
 }
 
 object TransportMessageMaker {
