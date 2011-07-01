@@ -1,6 +1,9 @@
 package org.unixuser.haruyama.ssh
 
 import org.unixuser.haruyama.ssh.transport._
+import org.unixuser.haruyama.ssh.userauth._
+import org.unixuser.haruyama.ssh.connection._
+//import org.unixuser.haruyama.ssh.channel._
 import java.io._
 import java.net.{ InetAddress, ServerSocket, Socket, SocketException }
 import java.math.BigInteger
@@ -27,8 +30,8 @@ object SSHClientSample {
     //CR LF 集団の文字列でやりとりされる
     sendVersionString(out, clientVersion)
     val serverVersion = recvVersionString(in)
-    println("client SSH version: " + clientVersion)
-    println("server SSH version: " + serverVersion)
+//    println("client SSH version: " + clientVersion)
+//    println("server SSH version: " + serverVersion)
     //version のすり合わせは省略する
     serverVersion
   }
@@ -87,36 +90,86 @@ object SSHClientSample {
     (h, dhx.getK)
   }
 
-
-  private def createCiphersAndMacs(oldId: Option[Array[Byte]], h : Array[Byte], k : BigInteger) {
-    val sessionId = new Array[Byte](h.length)
-    oldId match {
-      case Some(oid) => oid.copyToArray(sessionId, 0)
-      case None      => h.copyToArray(sessionId, 0)
-    }
-
-    // 暗号とMACは決め打ちなのでサイズも決め打ち
-    val km = KeyMaterial.create("SHA1", h, k, sessionId, 16, 16, 20, 16, 16, 20)
-    val cipherC2S = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_client_to_server, km.initial_iv_client_to_server)
-    val cipherS2C = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_server_to_client, km.initial_iv_server_to_client)
-    val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
-    val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
-
-    (cipherC2S, cipherS2C, macC2S, macS2C)
+  private def exchangeNewkeys(transport: Transport) {
+    //NEWKEYS メッセージを交換
+    //新しい鍵になったことを知らせあう(鍵自体は送らない)
+    val serverNewkeys = transport.recvMessage().asInstanceOf[Newkeys]
+    transport.sendMessage(TransportMessageMaker.makeNewkeys)
   }
 
+  private def userauthPassword(transport: Transport, user: String, pass: String) {
+
+    transport.sendMessage(TransportMessageMaker.makeServiceRequest("ssh-userauth"))
+    val serviceRequestResult = transport.recvMessage().asInstanceOf[ServiceAccept]
+
+
+    transport.sendMessage(UserauthMessageMaker.makeUserauthRequestPassword(user, pass))
+    val userauthResult = transport.recvMessage().asInstanceOf[UserauthSuccess]
+  }
+
+  private def execCommand(transport: Transport, command : String) {
+    val senderChannel = 0
+    var windowSize = 32678
+    val maximumPacketSize = 32678
+    transport.sendMessage(ConnectionMessageMaker.makeChannelOpenSession(senderChannel, windowSize, maximumPacketSize))
+    val channelOpenConfirmation = transport.recvMessage().asInstanceOf[ChannelOpenConfirmation]
+//    println(channelOpenConfirmation)
+    val recipientChannel = channelOpenConfirmation.recipientChannel.value
+
+    transport.sendMessage(ConnectionMessageMaker.makeChannelRequestExec(recipientChannel, command))
+
+    val channelWindowAdjust = transport.recvMessage().asInstanceOf[ChannelWindowAdjust]
+//    println(channelWindowAdjust)
+
+    val channelData =  transport.recvMessage().asInstanceOf[ChannelData]
+    println(new String(channelData.data.value))
+
+    val channelEof = transport.recvMessage().asInstanceOf[ChannelEof]
+//    println(channelEof)
+
+
+    val channelExitStatus = transport.recvMessage().asInstanceOf[ChannelRequestExitStatus]
+//    println(channelExitStatus)
+  }
+
+
   def main(args: Array[String]) = {
-    val ia = InetAddress.getByName("localhost")
-    using(new Socket(ia, 22)) { socket =>
+    
+    if (args.length < 5) {
+      throw new IllegalArgumentException("please run [host] [port] [user] [pass] [command]")
+    }
+    val host = args(0)
+    val port = args(1).toInt
+    val user = args(2)
+    val pass = args(3)
+    val command = args(4)
+
+
+    val ia = InetAddress.getByName(host)
+    using(new Socket(ia, port)) { socket =>
       using(socket.getOutputStream) { out =>
         using(socket.getInputStream) { in =>
 
           val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
+          val unencryptedTransport = new UnencryptedTransport(in, out, new TransportMessageParser)
+          val (clientKexinit, serverKexinit) = negotiateAlgorithm(unencryptedTransport)
 
-          val (clientKexinit, serverKexinit) = negotiateAlgorithm(new UnencryptedTransport(in, out, new TransportMessageParser))
-
-          val (h, k) = exchangeKeys(new UnencryptedTransport(in, out, new DhExchangeMessageParser), CLIENT_VERSION, serverVersion,
+          unencryptedTransport.parser = new DhExchangeMessageParser
+          val (h, k) = exchangeKeys(unencryptedTransport, CLIENT_VERSION, serverVersion,
             clientKexinit, serverKexinit)
+
+          val sessionId = new Array[Byte](h.length)
+          h.copyToArray(sessionId, 0)
+
+          exchangeNewkeys(unencryptedTransport)
+
+          val encryptedTransport = new EncryptedTransport(in, out, new UserauthMessageParser, sessionId, h, k, unencryptedTransport)
+
+          userauthPassword(encryptedTransport, user, pass)
+
+          encryptedTransport.parser = new ConnectionMessageParser
+
+          execCommand(encryptedTransport, command)
         }
       }
     }
