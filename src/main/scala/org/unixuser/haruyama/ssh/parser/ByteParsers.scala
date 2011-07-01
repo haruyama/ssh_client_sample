@@ -20,7 +20,7 @@ trait ByteParsers extends Parsers {
   }
 
   def toSSHString(bytes: Seq[Byte]) : SSHString = {
-    SSHString(new String(bytes.toArray))
+    SSHString(bytes.toArray)
   }
 
   def toSSHUInt32(bytes: Seq[Byte]) : SSHUInt32 = {
@@ -28,8 +28,8 @@ trait ByteParsers extends Parsers {
   }
 
 
-  def toSSHNamedList(bytes: Seq[Byte]) : SSHNamedList= {
-    SSHNamedList(new String(bytes.toArray).split(","))
+  def toSSHNameList(bytes: Seq[Byte]) : SSHNameList= {
+    SSHNameList(new String(bytes.toArray, "US-ASCII").split(","))
   }
 
   def toSSHMpInt(bytes: Seq[Byte]) : SSHMpInt = {
@@ -43,7 +43,7 @@ trait ByteParsers extends Parsers {
   lazy val uint32: Parser[SSHUInt32] = repN(4, elem) ^^ toSSHUInt32
   //toInt のために完全に仕様通りではない
   lazy val string: Parser[SSHString] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHString
-  lazy val namedlist: Parser[SSHNamedList] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHNamedList
+  lazy val namelist: Parser[SSHNameList] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHNameList
   lazy val mpint: Parser[SSHMpInt] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHMpInt
 
   def parse[T](p: Parser[T], in: Input): ParseResult[T] = p(in)

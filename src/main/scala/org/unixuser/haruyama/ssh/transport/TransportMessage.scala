@@ -28,11 +28,11 @@ case class ServiceRequest(messageId: SSHByte, serviceName : SSHString) extends T
   assert(messageId == TransportConstant.SSH_MSG_SERVICE_REQUEST)
 }
 
-case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNamedList,
-  serverHostKeyAlgo: SSHNamedList, encC2S: SSHNamedList,
-  encS2C: SSHNamedList, macC2S: SSHNamedList, macS2C : SSHNamedList,
-  compC2S: SSHNamedList, compS2C: SSHNamedList, langC2S: SSHNamedList,
-  langS2C: SSHNamedList, firstKexPacketFollows: SSHBoolean, reserved: SSHUInt32)
+case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNameList,
+  serverHostKeyAlgo: SSHNameList, encC2S: SSHNameList,
+  encS2C: SSHNameList, macC2S: SSHNameList, macS2C : SSHNameList,
+  compC2S: SSHNameList, compS2C: SSHNameList, langC2S: SSHNameList,
+  langS2C: SSHNameList, firstKexPacketFollows: SSHBoolean, reserved: SSHUInt32)
   extends TransportMessage {
   assert(messageId == TransportConstant.SSH_MSG_KEXINIT)
   assert(cookie.length == 16)
@@ -43,7 +43,7 @@ object TransportMessageMaker {
     Newkeys(TransportConstant.SSH_MSG_NEWKEYS)
   }
   def makeServiceRequest(serviceName: String) : ServiceRequest = {
-    ServiceRequest(TransportConstant.SSH_MSG_SERVICE_REQUEST, SSHString(serviceName))
+    ServiceRequest(TransportConstant.SSH_MSG_SERVICE_REQUEST, SSHString(serviceName.getBytes("US-ASCII")))
   }
   def makeKexinit(kexAlgo: Seq[String], cookie: Seq[Byte],
   serverHostKeyAlgo: Seq[String], encC2S: Seq[String],
@@ -52,10 +52,10 @@ object TransportMessageMaker {
   langS2C: Seq[String], firstKexPacketFollows: Boolean) : Kexinit = {
 
     Kexinit(TransportConstant.SSH_MSG_KEXINIT, cookie.map(e => SSHByte((e & 0xff).toShort)),
-      SSHNamedList(kexAlgo), SSHNamedList(serverHostKeyAlgo), SSHNamedList(encC2S),
-      SSHNamedList(encS2C), SSHNamedList(macC2S), SSHNamedList(macS2C),
-      SSHNamedList(compC2S), SSHNamedList(compS2C), SSHNamedList(langC2S),
-      SSHNamedList(langS2C), SSHBoolean(firstKexPacketFollows), SSHUInt32(0))
+      SSHNameList(kexAlgo), SSHNameList(serverHostKeyAlgo), SSHNameList(encC2S),
+      SSHNameList(encS2C), SSHNameList(macC2S), SSHNameList(macS2C),
+      SSHNameList(compC2S), SSHNameList(compS2C), SSHNameList(langC2S),
+      SSHNameList(langS2C), SSHBoolean(firstKexPacketFollows), SSHUInt32(0))
   }
   def makeKexinit(kexAlgo: Seq[String], 
   serverHostKeyAlgo: Seq[String], encC2S: Seq[String],
@@ -81,8 +81,8 @@ class TransportMessageParser extends ByteParsers {
   lazy val serviceRequest: Parser[ServiceRequest] = messageId(TransportConstant.SSH_MSG_SERVICE_REQUEST) ~ string ^^
   {case id~name => ServiceRequest(id, name)}
 
-  lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~ namedlist ~
-  namedlist ~ namedlist ~ namedlist ~ namedlist ~ boolean ~ uint32 ^^
+  lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~
+  namelist ~ namelist ~ namelist ~ namelist ~ boolean ~ uint32 ^^
   {case id~cookie~kex~hostkey~encc2s~encs2c~macc2s~macs2c~compc2s~comps2c~langc2s~langs2c~first~reserved =>
     Kexinit(id,cookie,kex,hostkey,encc2s,encs2c,macc2s,macs2c,compc2s,comps2c,langc2s,langs2c,first,reserved)
   }

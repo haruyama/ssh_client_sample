@@ -80,7 +80,6 @@ class UnencryptedTransport(in: InputStream, out: OutputStream, parser: Transport
       arrayBuffer ++= padding
 
       val bytes = arrayBuffer.toArray
-      println(bytes mkString " ")
       bout.write(bytes, 0, bytes.length)
       bout.flush
   }
