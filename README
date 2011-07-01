@@ -3,9 +3,17 @@
 This is not a practical SSH Client.
 I suppose that this helps us understand SSH Protocol.
 
+* License
+
+This software (except lib/ganymed-ssh2-*.jar) is a public domain.
+
+lib/ganymed-ssh2-*.jar is/are "Ganymed SSH-2 for Java(http://www.ganymed.ethz.ch/ssh2/)" 
+and is/are redistributed under LICENSE.GANYMED.
+Please see LICENSE.GANYMED.
+
 * Usage
 
-I login 'test' user and execute 'ls'
+login 'test' user and execute 'ls'
 
 % ls ~test
 a hotate
