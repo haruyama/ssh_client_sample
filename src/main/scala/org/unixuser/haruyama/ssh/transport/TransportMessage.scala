@@ -28,6 +28,10 @@ case class ServiceRequest(messageId: SSHByte, serviceName : SSHString) extends T
   assert(messageId == TransportConstant.SSH_MSG_SERVICE_REQUEST)
 }
 
+case class ServiceAccept(messageId: SSHByte, serviceName : SSHString) extends TransportMessage {
+  assert(messageId == TransportConstant.SSH_MSG_SERVICE_ACCEPT)
+}
+
 case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNameList,
   serverHostKeyAlgo: SSHNameList, cipherC2S: SSHNameList,
   cipherS2C: SSHNameList, macC2S: SSHNameList, macS2C : SSHNameList,
@@ -81,6 +85,10 @@ class TransportMessageParser extends ByteParsers {
   lazy val serviceRequest: Parser[ServiceRequest] = messageId(TransportConstant.SSH_MSG_SERVICE_REQUEST) ~ string ^^
   {case id~name => ServiceRequest(id, name)}
 
+  lazy val serviceAccept: Parser[ServiceAccept] = messageId(TransportConstant.SSH_MSG_SERVICE_ACCEPT) ~ string ^^
+  {case id~name => ServiceAccept(id, name)}
+
+
   lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~
   namelist ~ namelist ~ namelist ~ namelist ~ boolean ~ uint32 ^^
   {case id~cookie~kex~hostkey~cipherc2s~ciphers2c~macc2s~macs2c~compc2s~comps2c~langc2s~langs2c~first~reserved =>
@@ -88,7 +96,7 @@ class TransportMessageParser extends ByteParsers {
   }
 
 
-  lazy val transportMessage = newkeys | serviceRequest | kexinit
+  lazy val transportMessage = newkeys | serviceRequest | serviceAccept | kexinit
 
   def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](transportMessage, bytes)
   def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](transportMessage, bytes)
