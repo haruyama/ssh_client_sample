@@ -18,4 +18,8 @@ case class SSHString(value: Array[Byte]) extends SSHDataType {
   override def hashCode() = {
     new String(value).hashCode
   }
+
+  override def toString = {
+    "SSHString(\"" + new String(value) + "\")"
+  }
 }
