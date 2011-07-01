@@ -9,16 +9,17 @@ Usage
 
 I login 'test' user and execute 'ls'
 
- | % ls ~test
- | a hotate
- | 
- | % sbt
- | ....
- | 
- | > run localhost 22 test test ls
- | ...
- | 
- | a
- | hotate
- | 
- | ...
+::
+ % ls ~test
+ a hotate
+ 
+ % sbt
+ ....
+ 
+ > run localhost 22 test test ls
+ ...
+ 
+ a
+ hotate
+ 
+ ...
