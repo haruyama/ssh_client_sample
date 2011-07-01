@@ -3,3 +3,22 @@ SSH Client Sample
 
 This is not a practical SSH Client.
 I suppose that this helps us understand SSH Protocol.
+
+Usage
+-------
+
+I login 'test' user and execute 'ls'
+
+ | % ls ~test
+ | a hotate
+ | 
+ | % sbt
+ | ....
+ | 
+ | > run localhost 22 test test ls
+ | ...
+ | 
+ | a
+ | hotate
+ | 
+ | ...
