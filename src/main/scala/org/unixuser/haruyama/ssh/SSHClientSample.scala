@@ -134,9 +134,9 @@ object SSHClientSample {
 
 
   def main(args: Array[String]) = {
-    
+
     if (args.length < 5) {
-      throw new IllegalArgumentException("please run [host] [port] [user] [pass] [command]")
+      throw new IllegalArgumentException("please run 'scala SSHClientSample [host] [port] [user] [pass] [command]'")
     }
     val host = args(0)
     val port = args(1).toInt
