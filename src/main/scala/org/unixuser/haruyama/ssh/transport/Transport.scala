@@ -23,6 +23,10 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   val in  = new BufferedInputStream(i)
   val out = new BufferedOutputStream(o)
   var parser = p
+
+  val UINT32_SIZE = 4
+  val MINIMUM_PADDING_LENGTH = 4
+
   protected def recvMessageBytes() : Array[Byte]
 
   def recvMessage() : Message = {
@@ -46,18 +50,18 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
     l.toInt
   }
 
-  protected def packPayload(message: Array[Byte]) : Array[Byte] = {
-    val remainder = (1 + message.size + 4) % 16
+  protected def packPayload(message: Array[Byte], blockSize: Int) : Array[Byte] = {
+    val remainder = (1 + message.size + UINT32_SIZE) % blockSize
 
     val padding_length =
-      if (remainder > 4) {
-        32 - remainder
+      if (remainder > (blockSize - MINIMUM_PADDING_LENGTH)) {
+        blockSize * 2 - remainder
       } else {
-        16 - remainder
+        blockSize - remainder
       }
 
     val packet_length = message.size + padding_length + 1
-    val arrayBuffer = new ArrayBuffer[Byte](4 + packet_length)
+    val arrayBuffer = new ArrayBuffer[Byte](UINT32_SIZE + packet_length)
 
     val random = new SecureRandom
     val padding = new Array[Byte](padding_length)
@@ -99,7 +103,7 @@ Transport(i, o, p, seqNumbers) {
   }
 
   override def sendMessageBytes(bytes: Array[Byte]) {
-    val packet = packPayload(bytes)
+    val packet = packPayload(bytes, 8)
     out.write(packet)
     out.flush
   }
@@ -164,7 +168,7 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
 
 
   override def sendMessageBytes(bytes: Array[Byte]) {
-    val packet = packPayload(bytes)
+    val packet = packPayload(bytes, CIPHERC2S_BLOCK_SIZE)
     val mac = new Array[Byte](MACC2S_SIZE)
     macC2S.initMac(seqNumbers.sendSeqNumber)
     macC2S.update(packet, 0, packet.length)
