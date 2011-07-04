@@ -1,7 +1,9 @@
 * SSH Client Sample
 
-This is not a practical SSH Client.
+This is a SSH Client but not a practical SSH Client.
 I suppose that this helps us understand SSH Protocol.
+
+I confirm that this works only for Debian sid's sshd "SSH-2.0-OpenSSH_5.8p1 Debian-4".
 
 * License
 
@@ -28,3 +30,4 @@ a
 hotate
 
 ...
+
