@@ -10,9 +10,8 @@ trait ByteParsers extends Parsers {
   def toSSHBoolean(byte: Byte) : SSHBoolean = {
     if (byte == 0) {
       return SSHBoolean(false)
-    } 
+    }
     return SSHBoolean(true)
-
   }
 
   def toSSHByte(byte: Byte) : SSHByte = {
@@ -27,7 +26,6 @@ trait ByteParsers extends Parsers {
     SSHUInt32(((bytes(0) & 0xff).toLong << 24) + ((bytes(1) & 0xff).toLong << 16) + ((bytes(2) & 0xff).toLong << 8) + (bytes(3) & 0xff).toLong)
   }
 
-
   def toSSHNameList(bytes: Seq[Byte]) : SSHNameList= {
     SSHNameList(new String(bytes.toArray, "US-ASCII").split(","))
   }
@@ -35,7 +33,6 @@ trait ByteParsers extends Parsers {
   def toSSHMpInt(bytes: Seq[Byte]) : SSHMpInt = {
     SSHMpInt(new java.math.BigInteger(bytes.toArray))
   }
-
 
   lazy val elem: Parser[Elem] = elem("elem", _ => true)
   lazy val boolean : Parser[SSHBoolean] = elem ^^ toSSHBoolean
