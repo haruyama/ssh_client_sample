@@ -22,4 +22,9 @@ case class SSHString(value: Array[Byte]) extends SSHDataType {
   override def toString = {
     "SSHString(\"" + new String(value) + "\")"
   }
+
+}
+
+object SSHString {
+  implicit def toSSHString(s : java.lang.String) = new SSHString(s.getBytes)
 }

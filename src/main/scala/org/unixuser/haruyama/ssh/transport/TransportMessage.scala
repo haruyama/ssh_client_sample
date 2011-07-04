@@ -47,7 +47,7 @@ object TransportMessageMaker {
     Newkeys(TransportConstant.SSH_MSG_NEWKEYS)
   }
   def makeServiceRequest(serviceName: String) : ServiceRequest = {
-    ServiceRequest(TransportConstant.SSH_MSG_SERVICE_REQUEST, SSHString(serviceName.getBytes("US-ASCII")))
+    ServiceRequest(TransportConstant.SSH_MSG_SERVICE_REQUEST, serviceName)
   }
   def makeKexinit(kexAlgo: Seq[String], cookie: Seq[Byte],
   serverHostKeyAlgo: Seq[String], cipherC2S: Seq[String],

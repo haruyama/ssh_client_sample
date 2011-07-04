@@ -66,13 +66,13 @@ case class ChannelEof(messageId: SSHByte, recipient: SSHUInt32) extends Connecti
 object ConnectionMessageMaker {
 
   def makeChannelOpenSession(senderChannel : Long, initialWindowSize: Long, maximumPacketSize: Long) = {
-    ChannelOpenSession(ConnectionConstant.SSH_MSG_CHANNEL_OPEN, SSHString("session".getBytes), SSHUInt32(senderChannel),
+    ChannelOpenSession(ConnectionConstant.SSH_MSG_CHANNEL_OPEN, "session", SSHUInt32(senderChannel),
       SSHUInt32(initialWindowSize), SSHUInt32(maximumPacketSize))
   }
 
   def makeChannelRequestExec(recipientChannel: Long, command : String) ={
-    ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, SSHUInt32(recipientChannel), SSHString("exec".getBytes),
-      SSHBoolean(false), SSHString(command.getBytes("UTF-8")))
+    ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, SSHUInt32(recipientChannel), "exec",
+      SSHBoolean(false), command)
   }
 }
 
