@@ -1,6 +1,6 @@
 package org.unixuser.haruyama.ssh.datatype
 import org.scalatest.FunSuite
-import org.unixuser.haruyama.ssh.datatype.SSHString.toSSHString
+import org.unixuser.haruyama.ssh.datatype.SSHDataType.toSSHString
 
 
 class SSHStringSuite extends FunSuite {

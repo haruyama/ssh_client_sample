@@ -24,7 +24,3 @@ case class SSHString(value: Array[Byte]) extends SSHDataType {
   }
 
 }
-
-object SSHString {
-  implicit def toSSHString(s : java.lang.String) = new SSHString(s.getBytes)
-}

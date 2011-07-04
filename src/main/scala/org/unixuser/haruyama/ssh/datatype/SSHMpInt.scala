@@ -13,7 +13,7 @@ case class SSHMpInt(value: BigInteger) extends SSHDataType {
 
     val byteArray = value.toByteArray
     val arrayBuffer = new ArrayBuffer[Byte](4 + byteArray.length)
-    for (e <- List(SSHUInt32(byteArray.length).toBytes, byteArray)) {
+    List(SSHUInt32(byteArray.length).toBytes, byteArray).foreach { e =>
       arrayBuffer ++= e
     }
     arrayBuffer.toArray

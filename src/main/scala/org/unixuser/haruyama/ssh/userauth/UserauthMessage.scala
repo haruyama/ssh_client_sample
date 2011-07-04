@@ -33,7 +33,7 @@ case class UserauthSuccess(messageId: SSHByte) extends UserauthMessage {
 
 object UserauthMessageMaker {
   def makeUserauthRequestPassword(user: String, pass: String) : UserauthRequestPassword = {
-    UserauthRequestPassword(SSHByte(50), user, "ssh-connection", "password", SSHBoolean(false), pass)
+    UserauthRequestPassword(UserauthConstant.SSH_MSG_USERAUTH_REQUEST, user, "ssh-connection", "password", false, pass)
   }
 }
 
