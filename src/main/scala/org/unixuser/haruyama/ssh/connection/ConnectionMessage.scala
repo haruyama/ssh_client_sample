@@ -88,7 +88,7 @@ class ConnectionMessageParser extends TransportMessageParser {
   lazy val channelEof = messageId(ConnectionConstant.SSH_MSG_CHANNEL_EOF) ~ uint32 ^^
   {case id~rc => ChannelEof(id, rc)}
 
-  lazy val channelExitStatus = messageId(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST) ~ uint32 ~ string ~ boolean ~ uint32 ^^
+  lazy val channelExitStatus = messageId(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST) ~ uint32 ~ specifiedString("exit-status") ~ boolean ~ uint32 ^^
   {case id~rc~s~wr~es => ChannelRequestExitStatus(id, rc, s, wr, es)}
 
 

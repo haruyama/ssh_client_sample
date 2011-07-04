@@ -80,6 +80,11 @@ class TransportMessageParser extends ByteParsers {
   def messageId(id : SSHByte)  : Parser[SSHByte] = {
     elem("messageId", (b:Byte)  => id.value.toByte == b) ^^ toSSHByte
   }
+
+  def specifiedString(s: String) : Parser[SSHString] = {
+    val sshStr = SSHString(s.getBytes)
+    acceptSeq(sshStr.toBytes) ^^ {_ => sshStr}
+  }
   lazy val newkeys : Parser[Newkeys] = messageId(TransportConstant.SSH_MSG_NEWKEYS) ^^ {(b :SSHByte)=> Newkeys(b)}
 
   lazy val serviceRequest: Parser[ServiceRequest] = messageId(TransportConstant.SSH_MSG_SERVICE_REQUEST) ~ string ^^
