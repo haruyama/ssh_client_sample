@@ -72,7 +72,7 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   }
 }
 
-class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends 
+class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends
 Transport(i, o, p, seqNumbers) {
 
   override def recvMessageBytes() : Array[Byte] = {
@@ -106,43 +106,52 @@ Transport(i, o, p, seqNumbers) {
 }
 
 class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, p, seqNumbers) {
-  // 鍵の再生成の際には古いsessionIdが存在するが， この実装では利用しない
   // この実装では暗号とMACは決め打ちなのでサイズも決め打ち
-  val km = KeyMaterial.create("SHA1", h, k, sessionId, 16, 16, 20, 16, 16, 20)
+  val CIPHERC2S_KEY_SIZE   = 16
+  val CIPHERC2S_BLOCK_SIZE = 16
+
+  val CIPHERS2C_KEY_SIZE = 16
+  val CIPHERS2C_BLOCK_SIZE = 16
+
+  val MACC2S_SIZE = 20
+  val MACS2C_SIZE = 20
+
+  val km = KeyMaterial.create("SHA1", h, k, sessionId, CIPHERC2S_KEY_SIZE, CIPHERC2S_BLOCK_SIZE, MACC2S_SIZE, CIPHERS2C_KEY_SIZE,
+    CIPHERS2C_BLOCK_SIZE, MACS2C_SIZE)
   val cipherC2S = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_client_to_server, km.initial_iv_client_to_server)
   val cipherS2C = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_server_to_client, km.initial_iv_server_to_client)
   val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
   val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
 
   override def recvMessageBytes() : Array[Byte] = {
-    val buf = new Array[Byte](16)
-    if (in.read(buf, 0, 16) == -1) {
+    val buf = new Array[Byte](CIPHERS2C_BLOCK_SIZE)
+    if (in.read(buf, 0, CIPHERS2C_BLOCK_SIZE) == -1) {
       throw new RuntimeException
     }
-    val firstDecrptedBlock = new Array[Byte](16)
+    val firstDecrptedBlock = new Array[Byte](CIPHERS2C_BLOCK_SIZE)
 
     cipherS2C.transformBlock(buf, 0, firstDecrptedBlock, 0)
 
     val length = parseLength(firstDecrptedBlock) + 4
-    var offset = 16
+    var offset = CIPHERS2C_BLOCK_SIZE
     val decryptedPacket = new Array[Byte](length)
     firstDecrptedBlock.copyToArray(decryptedPacket, 0)
 
     while (offset < length) {
-      if (in.read(buf, 0, 16) == -1) {
+      if (in.read(buf, 0, CIPHERS2C_BLOCK_SIZE) == -1) {
         throw new RuntimeException
       }
       cipherS2C.transformBlock(buf, 0, decryptedPacket, offset)
-      offset += 16
+      offset += CIPHERS2C_BLOCK_SIZE
     }
 
-    val sentMac = new Array[Byte](20)
-    if (in.read(sentMac, 0, 20) == -1) {
+    val sentMac = new Array[Byte](MACS2C_SIZE)
+    if (in.read(sentMac, 0, MACS2C_SIZE) == -1) {
         throw new RuntimeException
     }
 
 
-    val mac = new Array[Byte](20)
+    val mac = new Array[Byte](MACS2C_SIZE)
     macS2C.initMac(seqNumbers.recvSeqNumber)
     macS2C.update(decryptedPacket, 0, decryptedPacket.length)
     macS2C.getMac(mac, 0)
@@ -156,7 +165,7 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
 
   override def sendMessageBytes(bytes: Array[Byte]) {
     val packet = packPayload(bytes)
-    val mac = new Array[Byte](20)
+    val mac = new Array[Byte](MACC2S_SIZE)
     macC2S.initMac(seqNumbers.sendSeqNumber)
     macC2S.update(packet, 0, packet.length)
     macC2S.getMac(mac, 0)
@@ -166,7 +175,7 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
 
     while (offset < packet.length) {
       cipherC2S.transformBlock(packet, offset, encrypted, offset)
-      offset += 16
+      offset += CIPHERC2S_BLOCK_SIZE
     }
 
     out.write(encrypted)
