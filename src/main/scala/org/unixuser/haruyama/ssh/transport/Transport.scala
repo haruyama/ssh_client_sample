@@ -11,17 +11,23 @@ import ch.ethz.ssh2.crypto.cipher.BlockCipherFactory
 import ch.ethz.ssh2.crypto.digest.MAC
 import java.math.BigInteger
 
-abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessageParser) {
+
+class SequenceNumbers {
+  //本来はoverflowする前にrekeyする この実装ではrekeyを扱わない
+  var recvSeqNumber = 0
+  var sendSeqNumber = 0
+}
+
+
+abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers : SequenceNumbers) {
   val in  = new BufferedInputStream(i)
   val out = new BufferedOutputStream(o)
   var parser = p
-  var recvSeqNumber : Int
-  var sendSeqNumber : Int
-
   protected def recvMessageBytes() : Array[Byte]
 
   def recvMessage() : Message = {
     val bytes : Array[Byte] = recvMessageBytes()
+    seqNumbers.recvSeqNumber += 1
     val result = parser.parseAll(bytes)
     if (!result.successful) {
       throw new RuntimeException
@@ -32,6 +38,7 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   protected def sendMessageBytes(bytes: Array[Byte])
   def sendMessage(message: Message) {
     sendMessageBytes(message.toBytes)
+    seqNumbers.sendSeqNumber += 1
   }
 
   protected def parseLength(bytes: Array[Byte]) : Int = {
@@ -65,10 +72,8 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   }
 }
 
-class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser) extends Transport(i, o, p) {
-
-  var recvSeqNumber = 0
-  var sendSeqNumber = 0
+class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends 
+Transport(i, o, p, seqNumbers) {
 
   override def recvMessageBytes() : Array[Byte] = {
     val lengthBytes = new Array[Byte](4)
@@ -90,7 +95,6 @@ class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageP
     if (in.read(padding, 0, padding_length) == -1) {
       throw new RuntimeException
     }
-    recvSeqNumber += 1
     message
   }
 
@@ -98,12 +102,10 @@ class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageP
     val packet = packPayload(bytes)
     out.write(packet)
     out.flush
-    sendSeqNumber += 1
   }
 }
 
-class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k :
-  BigInteger, oldTransport : Transport ) extends Transport(i, o, p) {
+class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, p, seqNumbers) {
   // 鍵の再生成の際には古いsessionIdが存在するが， この実装では利用しない
   // この実装では暗号とMACは決め打ちなのでサイズも決め打ち
   val km = KeyMaterial.create("SHA1", h, k, sessionId, 16, 16, 20, 16, 16, 20)
@@ -111,9 +113,6 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
   val cipherS2C = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_server_to_client, km.initial_iv_server_to_client)
   val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
   val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
-
-  var recvSeqNumber = oldTransport.recvSeqNumber
-  var sendSeqNumber = oldTransport.sendSeqNumber
 
   override def recvMessageBytes() : Array[Byte] = {
     val buf = new Array[Byte](16)
@@ -144,11 +143,10 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
 
 
     val mac = new Array[Byte](20)
-    macS2C.initMac(recvSeqNumber)
+    macS2C.initMac(seqNumbers.recvSeqNumber)
     macS2C.update(decryptedPacket, 0, decryptedPacket.length)
     macS2C.getMac(mac, 0)
     assert(mac sameElements sentMac)
-    recvSeqNumber += 1
 
     val message = new Array[Byte](length - 5 - decryptedPacket(4))
     Array.copy(decryptedPacket, 5, message, 0, length -5 - decryptedPacket(4))
@@ -159,10 +157,9 @@ class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessagePar
   override def sendMessageBytes(bytes: Array[Byte]) {
     val packet = packPayload(bytes)
     val mac = new Array[Byte](20)
-    macC2S.initMac(sendSeqNumber)
+    macC2S.initMac(seqNumbers.sendSeqNumber)
     macC2S.update(packet, 0, packet.length)
     macC2S.getMac(mac, 0)
-    sendSeqNumber += 1
 
     val encrypted = new Array[Byte](packet.length)
     var offset = 0

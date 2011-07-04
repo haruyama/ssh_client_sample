@@ -151,7 +151,8 @@ object SSHClientSample {
         using(socket.getInputStream) { in =>
 
           val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
-          val unencryptedTransport = new UnencryptedTransport(in, out, new TransportMessageParser)
+          val sequenceNumbers = new SequenceNumbers
+          val unencryptedTransport = new UnencryptedTransport(in, out, new TransportMessageParser, sequenceNumbers)
           val (clientKexinit, serverKexinit) = negotiateAlgorithm(unencryptedTransport)
 
           unencryptedTransport.parser = new DhExchangeMessageParser
@@ -163,7 +164,7 @@ object SSHClientSample {
 
           exchangeNewkeys(unencryptedTransport)
 
-          val encryptedTransport = new EncryptedTransport(in, out, new UserauthMessageParser, sessionId, h, k, unencryptedTransport)
+          val encryptedTransport = new EncryptedTransport(in, out, new UserauthMessageParser, sessionId, h, k, sequenceNumbers)
 
           userauthPassword(encryptedTransport, user, pass)
 
