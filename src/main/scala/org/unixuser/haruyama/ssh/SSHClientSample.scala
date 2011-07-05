@@ -38,7 +38,7 @@ object SSHClientSample {
 
 
 
-  private def negotiateAlgorithm(transport : Transport) = {
+  private def negotiateAlgorithm(transport : TransportManager) = {
 
     //以後はSSHのパケットでやりとりされる
 
@@ -60,7 +60,7 @@ object SSHClientSample {
     (clientKexinit, serverKexinit)
   }
 
-  private def exchangeKeys(transport : Transport, clientVersion: String, serverVersion: String, clientKexinit : Kexinit, serverKexinit: Kexinit) = {
+  private def exchangeKeys(transport : TransportManager, clientVersion: String, serverVersion: String, clientKexinit : Kexinit, serverKexinit: Kexinit) = {
 
     //diffie-hellman-group1-sha1 鍵交換法を行なう準備
     val dhx = new DhExchange
@@ -90,14 +90,14 @@ object SSHClientSample {
     (h, dhx.getK)
   }
 
-  private def exchangeNewkeys(transport: Transport) {
+  private def exchangeNewkeys(transport: TransportManager) {
     //NEWKEYS メッセージを交換
     //新しい鍵になったことを知らせあう(鍵自体は送らない)
     val serverNewkeys = transport.recvMessage().asInstanceOf[Newkeys]
     transport.sendMessage(TransportMessageMaker.makeNewkeys)
   }
 
-  private def userauthPassword(transport: Transport, user: String, pass: String) {
+  private def userauthPassword(transport: TransportManager, user: String, pass: String) {
 
     transport.sendMessage(TransportMessageMaker.makeServiceRequest("ssh-userauth"))
     val serviceRequestResult = transport.recvMessage().asInstanceOf[ServiceAccept]
@@ -107,7 +107,7 @@ object SSHClientSample {
     val userauthResult = transport.recvMessage().asInstanceOf[UserauthSuccess]
   }
 
-  private def execCommand(transport: Transport, command : String) {
+  private def execCommand(transport: TransportManager, command : String) {
     val senderChannel = 0
     var windowSize = 32678
     val maximumPacketSize = 32678
@@ -153,21 +153,21 @@ object SSHClientSample {
           val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
           val transportManager = new TransportManager(in, out)
 
-          val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager.transport)
+          val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager)
 
           transportManager.setParser(new DhExchangeMessageParser)
-          val (h, k) = exchangeKeys(transportManager.transport, CLIENT_VERSION, serverVersion,
+          val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
             clientKexinit, serverKexinit)
 
-          exchangeNewkeys(transportManager.transport)
+          exchangeNewkeys(transportManager)
 
           transportManager.changeKey(h, k)
 
           transportManager.setParser(new UserauthMessageParser)
-          userauthPassword(transportManager.transport, user, pass)
+          userauthPassword(transportManager, user, pass)
 
           transportManager.setParser(new ConnectionMessageParser)
-          execCommand(transportManager.transport, command)
+          execCommand(transportManager, command)
         }
       }
     }

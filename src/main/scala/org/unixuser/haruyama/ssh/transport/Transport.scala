@@ -20,38 +20,25 @@ class SequenceNumbers {
 
 class TransportManager(i: InputStream, o: OutputStream) {
   val seqNumbers = new SequenceNumbers
-  var transport : Transport = new UnencryptedTransport(i, o, new TransportMessageParser, seqNumbers)
+  var transport : Transport = new UnencryptedTransport(i, o, seqNumbers)
   var sessionId : Option[Array[Byte]] = None
+  var parser = new TransportMessageParser
 
   def setParser(p : TransportMessageParser) {
-    transport.parser = p
+    parser = p
   }
 
   def changeKey(h : Array[Byte], k : BigInteger) {
     transport =
       sessionId match {
-        case Some(sid) => new EncryptedTransport(i, o, transport.parser, sid, h, k, seqNumbers)
+        case Some(sid) => new EncryptedTransport(i, o, sid, h, k, seqNumbers)
         case None      =>
           sessionId = Some(h.clone)
-          new EncryptedTransport(i, o, transport.parser, h, h, k, seqNumbers)
+          new EncryptedTransport(i, o, h, h, k, seqNumbers)
      }
   }
-}
-
-
-
-abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers : SequenceNumbers) {
-  protected val in  = new BufferedInputStream(i)
-  protected val out = new BufferedOutputStream(o)
-  var parser = p
-
-  val UINT32_SIZE = 4
-  val MINIMUM_PADDING_LENGTH = 4
-
-  protected def recvMessageBytes() : Array[Byte]
-
   def recvMessage() : Message = {
-    val bytes : Array[Byte] = recvMessageBytes()
+    val bytes : Array[Byte] = transport.recvMessageBytes()
     seqNumbers.recvSeqNumber += 1
     val result = parser.parseAll(bytes)
     if (!result.successful) {
@@ -60,12 +47,25 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
     result.get
   }
 
-  protected def sendMessageBytes(bytes: Array[Byte])
   def sendMessage(message: Message) {
-    sendMessageBytes(message.toBytes)
+    transport.sendMessageBytes(message.toBytes)
     seqNumbers.sendSeqNumber += 1
   }
 
+}
+
+
+
+abstract class Transport(i: InputStream, o: OutputStream, seqNumbers : SequenceNumbers) {
+  protected val in  = new BufferedInputStream(i)
+  protected val out = new BufferedOutputStream(o)
+
+  val UINT32_SIZE = 4
+  val MINIMUM_PADDING_LENGTH = 4
+
+  def recvMessageBytes() : Array[Byte]
+
+  def sendMessageBytes(bytes: Array[Byte])
   protected def parseLength(bytes: Array[Byte]) : Int = {
     val l = ((bytes(0) & 0xff).toLong << 24) + ((bytes(1) & 0xff).toLong << 16) + ((bytes(2) & 0xff).toLong << 8) + (bytes(3) & 0xff).toLong
     l.toInt
@@ -97,8 +97,8 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   }
 }
 
-private class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends
-Transport(i, o, p, seqNumbers) {
+private class UnencryptedTransport(i: InputStream, o: OutputStream, seqNumbers: SequenceNumbers) extends
+Transport(i, o, seqNumbers) {
 
   override def recvMessageBytes() : Array[Byte] = {
     val lengthBytes = new Array[Byte](4)
@@ -130,7 +130,7 @@ Transport(i, o, p, seqNumbers) {
   }
 }
 
-private class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, p, seqNumbers) {
+private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, seqNumbers) {
   // この実装では暗号とMACは決め打ちなのでサイズも決め打ち
   val CIPHERC2S_KEY_SIZE   = 16
   val CIPHERC2S_BLOCK_SIZE = 16
