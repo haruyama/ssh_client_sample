@@ -13,12 +13,13 @@ import java.math.BigInteger
 
 
 class TransportManager(i: InputStream, o: OutputStream) {
-  var transport : Transport = new UnencryptedTransport(i, o)
-  var sessionId : Option[Array[Byte]] = None
-  var parser = new TransportMessageParser
-  var recvSeqNumber : Long = 0
-  var sendSeqNumber : Long = 0
-  private val UINT32_MAX = 4294967295L
+  private var transport : Transport = new UnencryptedTransport(i, o)
+  private var sessionId : Option[Array[Byte]] = None
+  private var parser = new TransportMessageParser
+  private var recvSeqNumber : Long = 0
+  private var sendSeqNumber : Long = 0
+
+  val UINT32_MAX = 4294967295L
 
   def setParser(p : TransportMessageParser) {
     parser = p
@@ -33,6 +34,7 @@ class TransportManager(i: InputStream, o: OutputStream) {
           new EncryptedTransport(i, o, h, h, k)
      }
   }
+
   def recvMessage() : Message = {
     val bytes : Array[Byte] = transport.recvMessageBytes(recvSeqNumber)
     recvSeqNumber += 1
@@ -139,12 +141,12 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
   val MACC2S_SIZE = 20
   val MACS2C_SIZE = 20
 
-  val km = KeyMaterial.create("SHA1", h, k, sessionId, CIPHERC2S_KEY_SIZE, CIPHERC2S_BLOCK_SIZE, MACC2S_SIZE, CIPHERS2C_KEY_SIZE,
+  private val km = KeyMaterial.create("SHA1", h, k, sessionId, CIPHERC2S_KEY_SIZE, CIPHERC2S_BLOCK_SIZE, MACC2S_SIZE, CIPHERS2C_KEY_SIZE,
     CIPHERS2C_BLOCK_SIZE, MACS2C_SIZE)
-  val cipherC2S = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_client_to_server, km.initial_iv_client_to_server)
-  val cipherS2C = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_server_to_client, km.initial_iv_server_to_client)
-  val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
-  val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
+  private val cipherC2S = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_client_to_server, km.initial_iv_client_to_server)
+  private val cipherS2C = BlockCipherFactory.createCipher("aes128-ctr", true, km.enc_key_server_to_client, km.initial_iv_server_to_client)
+  private val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
+  private val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
 
   override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = {
     val buf = new Array[Byte](CIPHERS2C_BLOCK_SIZE)
