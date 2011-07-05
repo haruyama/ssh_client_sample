@@ -46,17 +46,17 @@ case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNameLis
   assert(cookie.length == 16)
 }
 
-object TransportMessageMaker {
-  def makeDisconnect() : Disconnect = {
+object TransportMessageBuilder {
+  def buildDisconnect() : Disconnect = {
     Disconnect(TransportConstant.SSH_MSG_DISCONNECT)
   }
-  def makeNewkeys() : Newkeys = {
+  def buildNewkeys() : Newkeys = {
     Newkeys(TransportConstant.SSH_MSG_NEWKEYS)
   }
-  def makeServiceRequest(serviceName: String) : ServiceRequest = {
+  def buildServiceRequest(serviceName: String) : ServiceRequest = {
     ServiceRequest(TransportConstant.SSH_MSG_SERVICE_REQUEST, serviceName)
   }
-  def makeKexinit(kexAlgo: Seq[String], cookie: Seq[Byte],
+  def buildKexinit(kexAlgo: Seq[String], cookie: Seq[Byte],
   serverHostKeyAlgo: Seq[String], cipherC2S: Seq[String],
   cipherS2C: Seq[String], macC2S: Seq[String], macS2C : Seq[String],
   compC2S: Seq[String], compS2C: Seq[String], langC2S: Seq[String],
@@ -68,7 +68,7 @@ object TransportMessageMaker {
       SSHNameList(compC2S), SSHNameList(compS2C), SSHNameList(langC2S),
       SSHNameList(langS2C), SSHBoolean(firstKexPacketFollows), SSHUInt32(0))
   }
-  def makeKexinit(kexAlgo: Seq[String],
+  def buildKexinit(kexAlgo: Seq[String],
   serverHostKeyAlgo: Seq[String], cipherC2S: Seq[String],
   cipherS2C: Seq[String], macC2S: Seq[String], macS2C : Seq[String],
   compC2S: Seq[String], compS2C: Seq[String], langC2S: Seq[String],
@@ -77,7 +77,7 @@ object TransportMessageMaker {
     val random = new SecureRandom();
     val cookie = new Array[Byte](16)
     random.nextBytes(cookie);
-    makeKexinit(kexAlgo, cookie, serverHostKeyAlgo, cipherC2S, cipherS2C, macC2S, macS2C, compC2S, compS2C, langC2S, langS2C,
+    buildKexinit(kexAlgo, cookie, serverHostKeyAlgo, cipherC2S, cipherS2C, macC2S, macS2C, compC2S, compS2C, langC2S, langS2C,
       firstKexPacketFollows)
   }
 }

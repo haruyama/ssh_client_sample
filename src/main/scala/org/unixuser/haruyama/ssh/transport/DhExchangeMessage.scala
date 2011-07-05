@@ -21,8 +21,8 @@ case class KexdhReply(messageId: SSHByte, hostKey : SSHString, f : SSHMpInt, sig
   assert(messageId == DhExchangeConstant.SSH_MSG_KEXDH_REPLY)
 }
 
-object DhExchangeMessageMaker {
-  def makeKexdhInit(e: BigInteger) : KexdhInit = {
+object DhExchangeMessageBuilder {
+  def buildKexdhInit(e: BigInteger) : KexdhInit = {
     KexdhInit(DhExchangeConstant.SSH_MSG_KEXDH_INIT, SSHMpInt(e))
   }
 }

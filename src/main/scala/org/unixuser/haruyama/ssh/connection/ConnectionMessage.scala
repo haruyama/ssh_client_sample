@@ -67,17 +67,17 @@ case class ChannelClose(messageId: SSHByte, recipientChannel: SSHUInt32) extends
   assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_CLOSE)
 }
 
-object ConnectionMessageMaker {
+object ConnectionMessageBuilder {
 
-  def makeChannelOpenSession(senderChannel : Long, initialWindowSize: Long, maximumPacketSize: Long) = {
+  def buildChannelOpenSession(senderChannel : Long, initialWindowSize: Long, maximumPacketSize: Long) = {
     ChannelOpenSession(ConnectionConstant.SSH_MSG_CHANNEL_OPEN, "session", senderChannel, initialWindowSize, maximumPacketSize)
   }
 
-  def makeChannelRequestExec(recipientChannel: Long, command : String) = {
+  def buildChannelRequestExec(recipientChannel: Long, command : String) = {
     ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, recipientChannel, "exec", false, command)
   }
 
-  def makeChannelClose(recipientChannel: Long) = {
+  def buildChannelClose(recipientChannel: Long) = {
     ChannelClose(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE, recipientChannel)
   }
 }

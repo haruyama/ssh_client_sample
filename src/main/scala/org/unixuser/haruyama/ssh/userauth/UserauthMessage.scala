@@ -31,8 +31,8 @@ case class UserauthSuccess(messageId: SSHByte) extends UserauthMessage {
   assert(messageId == UserauthConstant.SSH_MSG_USERAUTH_SUCCESS)
 }
 
-object UserauthMessageMaker {
-  def makeUserauthRequestPassword(user: String, pass: String) : UserauthRequestPassword = {
+object UserauthMessageBuilder {
+  def buildUserauthRequestPassword(user: String, pass: String) : UserauthRequestPassword = {
     UserauthRequestPassword(UserauthConstant.SSH_MSG_USERAUTH_REQUEST, user, "ssh-connection", "password", false, pass)
   }
 }
