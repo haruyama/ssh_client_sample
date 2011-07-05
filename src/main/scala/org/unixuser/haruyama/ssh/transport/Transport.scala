@@ -1,28 +1,37 @@
 package org.unixuser.haruyama.ssh.transport
 
+import scala.collection.mutable.ArrayBuffer
+
 import org.unixuser.haruyama.ssh.datatype.SSHUInt32
 import org.unixuser.haruyama.ssh.message.Message
-import scala.collection.mutable.ArrayBuffer
+import org.unixuser.haruyama.ssh.parser.MessageParser
+
 import java.security.SecureRandom
 import java.io._
+import java.math.BigInteger
+
 import ch.ethz.ssh2.crypto.KeyMaterial
 import ch.ethz.ssh2.crypto.cipher.BlockCipher
 import ch.ethz.ssh2.crypto.cipher.BlockCipherFactory
 import ch.ethz.ssh2.crypto.digest.MAC
-import java.math.BigInteger
 
 
 class TransportManager(i: InputStream, o: OutputStream) {
   private var transport : Transport = new UnencryptedTransport(i, o)
   private var sessionId : Option[Array[Byte]] = None
-  private var parser = new TransportMessageParser
+  private val transportParser = new TransportMessageParser
+  private var overlayParser : Option[MessageParser] = None
   private var recvSeqNumber : Long = 0
   private var sendSeqNumber : Long = 0
 
   val UINT32_MAX = 4294967295L
 
-  def setParser(p : TransportMessageParser) {
-    parser = p
+  def setOverlayParser(p : MessageParser) {
+    overlayParser = Some(p)
+  }
+
+  def clearOverlayParser() {
+    overlayParser = None
   }
 
   def changeKey(h : Array[Byte], k : BigInteger) {
@@ -35,15 +44,33 @@ class TransportManager(i: InputStream, o: OutputStream) {
      }
   }
 
+
+  def parseMessage(bytes: Array[Byte]) : Message = {
+    val transportResult = transportParser.parseAll(bytes)
+    if (transportResult.successful) {
+      // SSH_MSG_DISCONNECT, SSH_MSG_IGNORE, SSH_MSG_DEBUG はここで処理し伝播させないほうがよさそう
+      // ここでは省略する
+      return transportResult.get
+    }
+    if (overlayParser.isEmpty) {
+      throw new RuntimeException
+    }
+    val overlayResult = overlayParser.get.parseAll(bytes)
+
+    if (!overlayResult.successful) {
+      throw new RuntimeException
+    }
+    overlayResult.get
+  }
+
+
+
   def recvMessage() : Message = {
     val bytes : Array[Byte] = transport.recvMessageBytes(recvSeqNumber)
     recvSeqNumber += 1
     if (recvSeqNumber > UINT32_MAX) recvSeqNumber = 0
-    val result = parser.parseAll(bytes)
-    if (!result.successful) {
-      throw new RuntimeException
-    }
-    result.get
+
+    parseMessage(bytes)
   }
 
   def sendMessage(message: Message) {

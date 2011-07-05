@@ -3,6 +3,7 @@ package org.unixuser.haruyama.ssh.parser
 import scala.util.parsing.combinator._
 
 import org.unixuser.haruyama.ssh.datatype._
+import org.unixuser.haruyama.ssh.message.Message
 
 trait ByteParsers extends Parsers {
   type Elem = Byte
@@ -46,4 +47,17 @@ trait ByteParsers extends Parsers {
   def parse[T](p: Parser[T], in: Input): ParseResult[T] = p(in)
   def parse[T](p: Parser[T], bytes: Seq[Byte]): ParseResult[T] = parse(p, new ByteReader(bytes))
   def parseAll[T](p: Parser[T], bytes: Seq[Byte]): ParseResult[T] = parse(phrase(p), new ByteReader(bytes))
+}
+
+abstract class MessageParser extends ByteParsers {
+  def messageId(id : SSHByte)  : Parser[SSHByte] = {
+    elem("messageId", (b:Byte)  => id.value.toByte == b) ^^ toSSHByte
+  }
+
+  def specifiedString(s: String) : Parser[SSHString] = {
+    val sshStr = SSHString(s.getBytes)
+    acceptSeq(sshStr.toBytes) ^^ {_ => sshStr}
+  }
+  def parse(bytes: Seq[Byte]) : ParseResult[Message]
+  def parseAll(bytes: Seq[Byte]) : ParseResult[Message]
 }

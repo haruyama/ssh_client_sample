@@ -127,7 +127,6 @@ object SSHClientSample {
     val channelEof = transport.recvMessage().asInstanceOf[ChannelEof]
 //    println(channelEof)
 
-
     val channelExitStatus = transport.recvMessage().asInstanceOf[ChannelRequestExitStatus]
 //    println(channelExitStatus)
   }
@@ -155,18 +154,19 @@ object SSHClientSample {
 
           val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager)
 
-          transportManager.setParser(new DhExchangeMessageParser)
+          transportManager.setOverlayParser(new DhExchangeMessageParser)
           val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
             clientKexinit, serverKexinit)
 
+          transportManager.clearOverlayParser
           exchangeNewkeys(transportManager)
 
           transportManager.changeKey(h, k)
 
-          transportManager.setParser(new UserauthMessageParser)
+          transportManager.setOverlayParser(new UserauthMessageParser)
           userauthPassword(transportManager, user, pass)
 
-          transportManager.setParser(new ConnectionMessageParser)
+          transportManager.setOverlayParser(new ConnectionMessageParser)
           execCommand(transportManager, command)
         }
       }

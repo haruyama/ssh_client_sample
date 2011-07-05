@@ -75,7 +75,7 @@ object ConnectionMessageMaker {
 }
 
 
-class ConnectionMessageParser extends TransportMessageParser {
+class ConnectionMessageParser extends MessageParser {
   lazy val channelOpenConfirmation = messageId(ConnectionConstant.SSH_MSG_CHANNEL_OPEN_CONFIRMATION) ~ uint32 ~ uint32 ~ uint32 ~ uint32 ^^
   {case id~rc~sc~iws~mps => ChannelOpenConfirmation(id, rc, sc, iws, mps)}
 
@@ -92,8 +92,7 @@ class ConnectionMessageParser extends TransportMessageParser {
   {case id~rc~s~wr~es => ChannelRequestExitStatus(id, rc, s, wr, es)}
 
 
-  lazy val connectionMessage = transportMessage | channelOpenConfirmation | channelWindowAdjust | channelData | channelEof |
-  channelExitStatus
+  lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](connectionMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](connectionMessage, bytes)
