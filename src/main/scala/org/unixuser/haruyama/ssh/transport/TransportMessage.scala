@@ -19,6 +19,10 @@ object TransportConstant {
   val SSH_MSG_NEWKEYS         = SSHByte(21)
 }
 
+case class Disconnect(messageId: SSHByte) extends TransportMessage {
+  assert(messageId == TransportConstant.SSH_MSG_DISCONNECT)
+}
+
 
 case class Newkeys(messageId: SSHByte) extends TransportMessage {
   assert(messageId == TransportConstant.SSH_MSG_NEWKEYS)
@@ -43,6 +47,9 @@ case class Kexinit(messageId: SSHByte, cookie: Seq[SSHByte], kexAlgo: SSHNameLis
 }
 
 object TransportMessageMaker {
+  def makeDisconnect() : Disconnect = {
+    Disconnect(TransportConstant.SSH_MSG_DISCONNECT)
+  }
   def makeNewkeys() : Newkeys = {
     Newkeys(TransportConstant.SSH_MSG_NEWKEYS)
   }
@@ -92,8 +99,9 @@ class TransportMessageParser extends MessageParser {
     Kexinit(id,cookie,kex,hostkey,cipherc2s,ciphers2c,macc2s,macs2c,compc2s,comps2c,langc2s,langs2c,first,reserved)
   }
 
+  lazy val disconnect : Parser[Disconnect] = messageId(TransportConstant.SSH_MSG_DISCONNECT) ^^ {(b :SSHByte)=> Disconnect(b)}
 
-  lazy val transportMessage = newkeys | serviceRequest | serviceAccept | kexinit
+  lazy val transportMessage = newkeys | serviceRequest | serviceAccept | kexinit | disconnect
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](transportMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](transportMessage, bytes)

@@ -136,6 +136,10 @@ object SSHClientSample {
     val channelClose = transport.recvMessage().asInstanceOf[ChannelClose]
   }
 
+  def disconnect(transport : TransportManager) {
+    transport.sendMessage(TransportMessageMaker.makeDisconnect())
+  }
+
   def main(args: Array[String]) = {
 
     if (args.length < 5) {
@@ -172,6 +176,8 @@ object SSHClientSample {
 
           transportManager.setOverlayParser(new ConnectionMessageParser)
           execCommand(transportManager, command)
+
+          disconnect(transportManager)
         }
       }
     }
