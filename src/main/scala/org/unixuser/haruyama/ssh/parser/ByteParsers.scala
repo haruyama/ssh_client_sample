@@ -51,7 +51,7 @@ trait ByteParsers extends Parsers {
 
 abstract class MessageParser extends ByteParsers {
   def messageId(id : SSHByte)  : Parser[SSHByte] = {
-    elem("messageId", (b:Byte)  => id.value.toByte == b) ^^ toSSHByte
+    accept(id.value.toByte) ^^ toSSHByte
   }
 
   def specifiedString(s: String) : Parser[SSHString] = {
