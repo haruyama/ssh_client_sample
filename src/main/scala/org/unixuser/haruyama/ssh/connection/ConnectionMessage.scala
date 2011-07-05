@@ -55,12 +55,16 @@ case class ChannelWindowAdjust(messageId : SSHByte, recipientChannel : SSHUInt32
   assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_WINDOW_ADJUST)
 }
 
-case class ChannelData(messageId: SSHByte, recipient: SSHUInt32, data: SSHString) extends ConnectionMessage {
+case class ChannelData(messageId: SSHByte, recipientChannel: SSHUInt32, data: SSHString) extends ConnectionMessage {
   assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_DATA)
 }
 
-case class ChannelEof(messageId: SSHByte, recipient: SSHUInt32) extends ConnectionMessage {
+case class ChannelEof(messageId: SSHByte, recipientChannel: SSHUInt32) extends ConnectionMessage {
   assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_EOF)
+}
+
+case class ChannelClose(messageId: SSHByte, recipientChannel: SSHUInt32) extends ConnectionMessage {
+  assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_CLOSE)
 }
 
 object ConnectionMessageMaker {
@@ -69,8 +73,12 @@ object ConnectionMessageMaker {
     ChannelOpenSession(ConnectionConstant.SSH_MSG_CHANNEL_OPEN, "session", senderChannel, initialWindowSize, maximumPacketSize)
   }
 
-  def makeChannelRequestExec(recipientChannel: Long, command : String) ={
+  def makeChannelRequestExec(recipientChannel: Long, command : String) = {
     ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, recipientChannel, "exec", false, command)
+  }
+
+  def makeChannelClose(recipientChannel: Long) = {
+    ChannelClose(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE, recipientChannel)
   }
 }
 
@@ -91,8 +99,10 @@ class ConnectionMessageParser extends MessageParser {
   lazy val channelExitStatus = messageId(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST) ~ uint32 ~ specifiedString("exit-status") ~ boolean ~ uint32 ^^
   {case id~rc~s~wr~es => ChannelRequestExitStatus(id, rc, s, wr, es)}
 
+  lazy val channelClose = messageId(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE) ~ uint32 ^^
+  {case id~rc => ChannelClose(id, rc)}
 
-  lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus
+  lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus | channelClose
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](connectionMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](connectionMessage, bytes)

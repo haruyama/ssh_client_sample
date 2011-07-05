@@ -4,10 +4,14 @@ import org.unixuser.haruyama.ssh.transport._
 import org.unixuser.haruyama.ssh.userauth._
 import org.unixuser.haruyama.ssh.connection._
 //import org.unixuser.haruyama.ssh.channel._
+
+import scala.actors._
+
 import java.io._
 import java.net.{ InetAddress, ServerSocket, Socket, SocketException }
 import java.math.BigInteger
 import java.security.SecureRandom
+
 import ch.ethz.ssh2.crypto.dh.DhExchange
 import ch.ethz.ssh2.signature.RSAPublicKey
 import ch.ethz.ssh2.signature.RSASHA1Verify
@@ -119,18 +123,18 @@ object SSHClientSample {
     transport.sendMessage(ConnectionMessageMaker.makeChannelRequestExec(recipientChannel, command))
 
     val channelWindowAdjust = transport.recvMessage().asInstanceOf[ChannelWindowAdjust]
-//    println(channelWindowAdjust)
 
     val channelData =  transport.recvMessage().asInstanceOf[ChannelData]
     println(new String(channelData.data.value))
 
     val channelEof = transport.recvMessage().asInstanceOf[ChannelEof]
-//    println(channelEof)
 
     val channelExitStatus = transport.recvMessage().asInstanceOf[ChannelRequestExitStatus]
-//    println(channelExitStatus)
-  }
 
+    transport.sendMessage(ConnectionMessageMaker.makeChannelClose(recipientChannel))
+
+    val channelClose = transport.recvMessage().asInstanceOf[ChannelClose]
+  }
 
   def main(args: Array[String]) = {
 
