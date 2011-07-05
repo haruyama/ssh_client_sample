@@ -151,26 +151,23 @@ object SSHClientSample {
         using(socket.getInputStream) { in =>
 
           val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
-          val sequenceNumbers = new SequenceNumbers
-          val unencryptedTransport = new UnencryptedTransport(in, out, new TransportMessageParser, sequenceNumbers)
-          val (clientKexinit, serverKexinit) = negotiateAlgorithm(unencryptedTransport)
+          val transportManager = new TransportManager(in, out)
 
-          unencryptedTransport.parser = new DhExchangeMessageParser
-          val (h, k) = exchangeKeys(unencryptedTransport, CLIENT_VERSION, serverVersion,
+          val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager.transport)
+
+          transportManager.setParser(new DhExchangeMessageParser)
+          val (h, k) = exchangeKeys(transportManager.transport, CLIENT_VERSION, serverVersion,
             clientKexinit, serverKexinit)
 
-          val sessionId = new Array[Byte](h.length)
-          h.copyToArray(sessionId, 0)
+          exchangeNewkeys(transportManager.transport)
 
-          exchangeNewkeys(unencryptedTransport)
+          transportManager.changeKey(h, k)
 
-          val encryptedTransport = new EncryptedTransport(in, out, new UserauthMessageParser, sessionId, h, k, sequenceNumbers)
+          transportManager.setParser(new UserauthMessageParser)
+          userauthPassword(transportManager.transport, user, pass)
 
-          userauthPassword(encryptedTransport, user, pass)
-
-          encryptedTransport.parser = new ConnectionMessageParser
-
-          execCommand(encryptedTransport, command)
+          transportManager.setParser(new ConnectionMessageParser)
+          execCommand(transportManager.transport, command)
         }
       }
     }

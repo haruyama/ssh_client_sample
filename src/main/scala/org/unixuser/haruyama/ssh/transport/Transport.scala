@@ -18,10 +18,31 @@ class SequenceNumbers {
   var sendSeqNumber = 0
 }
 
+class TransportManager(i: InputStream, o: OutputStream) {
+  val seqNumbers = new SequenceNumbers
+  var transport : Transport = new UnencryptedTransport(i, o, new TransportMessageParser, seqNumbers)
+  var sessionId : Option[Array[Byte]] = None
+
+  def setParser(p : TransportMessageParser) {
+    transport.parser = p
+  }
+
+  def changeKey(h : Array[Byte], k : BigInteger) {
+    transport =
+      sessionId match {
+        case Some(sid) => new EncryptedTransport(i, o, transport.parser, sid, h, k, seqNumbers)
+        case None      =>
+          sessionId = Some(h.clone)
+          new EncryptedTransport(i, o, transport.parser, h, h, k, seqNumbers)
+     }
+  }
+}
+
+
 
 abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers : SequenceNumbers) {
-  val in  = new BufferedInputStream(i)
-  val out = new BufferedOutputStream(o)
+  protected val in  = new BufferedInputStream(i)
+  protected val out = new BufferedOutputStream(o)
   var parser = p
 
   val UINT32_SIZE = 4
@@ -76,7 +97,7 @@ abstract class Transport(i: InputStream, o: OutputStream, p: TransportMessagePar
   }
 }
 
-class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends
+private class UnencryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, seqNumbers: SequenceNumbers) extends
 Transport(i, o, p, seqNumbers) {
 
   override def recvMessageBytes() : Array[Byte] = {
@@ -109,7 +130,7 @@ Transport(i, o, p, seqNumbers) {
   }
 }
 
-class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, p, seqNumbers) {
+private class EncryptedTransport(i: InputStream, o: OutputStream, p: TransportMessageParser, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, p, seqNumbers) {
   // この実装では暗号とMACは決め打ちなのでサイズも決め打ち
   val CIPHERC2S_KEY_SIZE   = 16
   val CIPHERC2S_BLOCK_SIZE = 16
