@@ -12,17 +12,13 @@ import ch.ethz.ssh2.crypto.digest.MAC
 import java.math.BigInteger
 
 
-class SequenceNumbers {
-  //本来はoverflowする前にrekeyする この実装ではrekeyを扱わない
-  var recvSeqNumber = 0
-  var sendSeqNumber = 0
-}
-
 class TransportManager(i: InputStream, o: OutputStream) {
-  val seqNumbers = new SequenceNumbers
-  var transport : Transport = new UnencryptedTransport(i, o, seqNumbers)
+  var transport : Transport = new UnencryptedTransport(i, o)
   var sessionId : Option[Array[Byte]] = None
   var parser = new TransportMessageParser
+  var recvSeqNumber : Long = 0
+  var sendSeqNumber : Long = 0
+  private val UINT32_MAX = 4294967295L
 
   def setParser(p : TransportMessageParser) {
     parser = p
@@ -31,15 +27,16 @@ class TransportManager(i: InputStream, o: OutputStream) {
   def changeKey(h : Array[Byte], k : BigInteger) {
     transport =
       sessionId match {
-        case Some(sid) => new EncryptedTransport(i, o, sid, h, k, seqNumbers)
+        case Some(sid) => new EncryptedTransport(i, o, sid, h, k)
         case None      =>
           sessionId = Some(h.clone)
-          new EncryptedTransport(i, o, h, h, k, seqNumbers)
+          new EncryptedTransport(i, o, h, h, k)
      }
   }
   def recvMessage() : Message = {
-    val bytes : Array[Byte] = transport.recvMessageBytes()
-    seqNumbers.recvSeqNumber += 1
+    val bytes : Array[Byte] = transport.recvMessageBytes(recvSeqNumber)
+    recvSeqNumber += 1
+    if (recvSeqNumber > UINT32_MAX) recvSeqNumber = 0
     val result = parser.parseAll(bytes)
     if (!result.successful) {
       throw new RuntimeException
@@ -48,24 +45,25 @@ class TransportManager(i: InputStream, o: OutputStream) {
   }
 
   def sendMessage(message: Message) {
-    transport.sendMessageBytes(message.toBytes)
-    seqNumbers.sendSeqNumber += 1
+    transport.sendMessageBytes(message.toBytes, sendSeqNumber)
+    sendSeqNumber += 1
+    if (sendSeqNumber > UINT32_MAX) sendSeqNumber = 0
   }
 
 }
 
 
 
-abstract class Transport(i: InputStream, o: OutputStream, seqNumbers : SequenceNumbers) {
+abstract class Transport(i: InputStream, o: OutputStream) {
   protected val in  = new BufferedInputStream(i)
   protected val out = new BufferedOutputStream(o)
 
   val UINT32_SIZE = 4
   val MINIMUM_PADDING_LENGTH = 4
 
-  def recvMessageBytes() : Array[Byte]
+  def recvMessageBytes(recvSeqNumber : Long) : Array[Byte]
 
-  def sendMessageBytes(bytes: Array[Byte])
+  def sendMessageBytes(bytes: Array[Byte], sendSeqNumber: Long)
   protected def parseLength(bytes: Array[Byte]) : Int = {
     val l = ((bytes(0) & 0xff).toLong << 24) + ((bytes(1) & 0xff).toLong << 16) + ((bytes(2) & 0xff).toLong << 8) + (bytes(3) & 0xff).toLong
     l.toInt
@@ -97,10 +95,10 @@ abstract class Transport(i: InputStream, o: OutputStream, seqNumbers : SequenceN
   }
 }
 
-private class UnencryptedTransport(i: InputStream, o: OutputStream, seqNumbers: SequenceNumbers) extends
-Transport(i, o, seqNumbers) {
+private class UnencryptedTransport(i: InputStream, o: OutputStream) extends
+Transport(i, o) {
 
-  override def recvMessageBytes() : Array[Byte] = {
+  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = {
     val lengthBytes = new Array[Byte](4)
     if (in.read(lengthBytes, 0, 4) == -1) {
       throw new RuntimeException
@@ -123,14 +121,14 @@ Transport(i, o, seqNumbers) {
     message
   }
 
-  override def sendMessageBytes(bytes: Array[Byte]) {
+  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber: Long) {
     val packet = packPayload(bytes, 8)
     out.write(packet)
     out.flush
   }
 }
 
-private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Array[Byte], h : Array[Byte], k : BigInteger, seqNumbers: SequenceNumbers) extends Transport(i, o, seqNumbers) {
+private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Array[Byte], h : Array[Byte], k : BigInteger) extends Transport(i, o) {
   // この実装では暗号とMACは決め打ちなのでサイズも決め打ち
   val CIPHERC2S_KEY_SIZE   = 16
   val CIPHERC2S_BLOCK_SIZE = 16
@@ -148,7 +146,7 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
   val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
   val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
 
-  override def recvMessageBytes() : Array[Byte] = {
+  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = {
     val buf = new Array[Byte](CIPHERS2C_BLOCK_SIZE)
     if (in.read(buf, 0, CIPHERS2C_BLOCK_SIZE) == -1) {
       throw new RuntimeException
@@ -177,7 +175,7 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
 
 
     val mac = new Array[Byte](MACS2C_SIZE)
-    macS2C.initMac(seqNumbers.recvSeqNumber)
+    macS2C.initMac(recvSeqNumber.toInt)
     macS2C.update(decryptedPacket, 0, decryptedPacket.length)
     macS2C.getMac(mac, 0)
     assert(mac sameElements sentMac)
@@ -188,10 +186,10 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
   }
 
 
-  override def sendMessageBytes(bytes: Array[Byte]) {
+  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber : Long) {
     val packet = packPayload(bytes, CIPHERC2S_BLOCK_SIZE)
     val mac = new Array[Byte](MACC2S_SIZE)
-    macC2S.initMac(seqNumbers.sendSeqNumber)
+    macC2S.initMac(sendSeqNumber.toInt)
     macC2S.update(packet, 0, packet.length)
     macC2S.getMac(mac, 0)
 
