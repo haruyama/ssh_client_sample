@@ -25,25 +25,39 @@ import ch.ethz.ssh2.crypto.digest.MAC
 
 object SSHClientSample {
   val CLIENT_VERSION = "SSH-2.0-Sample"
+
   private def using[A <% { def close():Unit }](s: A)(f: A=>Any) {
-      try f(s) finally s.close()
+    try f(s) finally s.close()
   }
+
+
+  private def sendVersionString(out: OutputStream, clientVersion: String) {
+    out.write((clientVersion+ "\r\n").getBytes)
+  }
+
+  private def recvVersionString(in :InputStream) : String = {
+    val reader = new BufferedReader(new InputStreamReader(in))
+    var serverString = ""
+    //"SSH-"  で開始しない文字列は無視する
+    do {
+      serverString = reader.readLine
+    } while (!serverString.startsWith("SSH-"))
+    serverString
+    }
 
   private def exchangeVersion(in: InputStream, out: OutputStream, clientVersion : String) = {
     //version文字列の交換
     //CR LF 集団の文字列でやりとりされる
     sendVersionString(out, clientVersion)
     val serverVersion = recvVersionString(in)
-//    println("client SSH version: " + clientVersion)
-//    println("server SSH version: " + serverVersion)
+    //    println("client SSH version: " + clientVersion)
+    //    println("server SSH version: " + serverVersion)
     //version のすり合わせは省略する
     serverVersion
   }
 
 
-
   private def negotiateAlgorithm(transport : TransportManager) = {
-
     //以後はSSHのパケットでやりとりされる
 
     //サーバから KEXINIT メッセージを受け取る
@@ -91,7 +105,7 @@ object SSHClientSample {
     if (!RSASHA1Verify.verifySignature(h, rs, rpk)) new RuntimeException("RSA Key is not verified")
 
     // 交換ハッシュ H と 共有の秘密 K を返す
-    (h, dhx.getK)
+  (h, dhx.getK)
   }
 
   private def exchangeNewkeys(transport: TransportManager) {
@@ -116,8 +130,8 @@ object SSHClientSample {
         println("Userauth failed")
         println(authentications)
         throw new RuntimeException("Uearauth failed")
-    }
   }
+    }
 
   private def execCommand(transport: TransportManager, command : String) {
     val senderChannel = 0
@@ -125,7 +139,7 @@ object SSHClientSample {
     val maximumPacketSize = 32678
     transport.sendMessage(ConnectionMessageBuilder.buildChannelOpenSession(senderChannel, windowSize, maximumPacketSize))
     val channelOpenConfirmation = transport.recvMessage().asInstanceOf[ChannelOpenConfirmation]
-//    println(channelOpenConfirmation)
+    //    println(channelOpenConfirmation)
     val recipientChannel = channelOpenConfirmation.recipientChannel.value
 
     transport.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(recipientChannel, command))
@@ -144,66 +158,59 @@ object SSHClientSample {
     val channelClose = transport.recvMessage().asInstanceOf[ChannelClose]
   }
 
-  def disconnect(transport : TransportManager) {
+  private def disconnect(transport: TransportManager) {
     transport.sendMessage(TransportMessageBuilder.buildDisconnect())
+  }
+
+  private def ssh(in: InputStream, out: OutputStream, user: String, pass: String, command: String) {
+
+    val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
+    val transportManager = new TransportManager(in, out)
+
+    val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager)
+
+    transportManager.setOverlayParser(new DhExchangeMessageParser)
+    val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
+      clientKexinit, serverKexinit)
+
+    transportManager.clearOverlayParser
+    exchangeNewkeys(transportManager)
+
+    transportManager.changeKey(h, k)
+
+    transportManager.setOverlayParser(new UserauthMessageParser)
+    userauthPassword(transportManager, user, pass)
+
+    transportManager.setOverlayParser(new ConnectionMessageParser)
+    execCommand(transportManager, command)
+
+    disconnect(transportManager)
+
   }
 
   def main(args: Array[String]) = {
 
     if (args.length < 5) {
       throw new IllegalArgumentException("please run 'scala SSHClientSample [host] [port] [user] [pass] [command]'")
+  }
+  val host = args(0)
+  val port = args(1).toInt
+  val user = args(2)
+  val pass = args(3)
+  val command = args(4)
+
+
+  val ia = InetAddress.getByName(host)
+  using(new Socket(ia, port)) { socket =>
+    using(socket.getOutputStream) { out =>
+      using(socket.getInputStream) { in =>
+
+        ssh(in, out, user, pass, command)
+
     }
-    val host = args(0)
-    val port = args(1).toInt
-    val user = args(2)
-    val pass = args(3)
-    val command = args(4)
-
-
-    val ia = InetAddress.getByName(host)
-    using(new Socket(ia, port)) { socket =>
-      using(socket.getOutputStream) { out =>
-        using(socket.getInputStream) { in =>
-
-          val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
-          val transportManager = new TransportManager(in, out)
-
-          val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager)
-
-          transportManager.setOverlayParser(new DhExchangeMessageParser)
-          val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
-            clientKexinit, serverKexinit)
-
-          transportManager.clearOverlayParser
-          exchangeNewkeys(transportManager)
-
-          transportManager.changeKey(h, k)
-
-          transportManager.setOverlayParser(new UserauthMessageParser)
-          userauthPassword(transportManager, user, pass)
-
-          transportManager.setOverlayParser(new ConnectionMessageParser)
-          execCommand(transportManager, command)
-
-          disconnect(transportManager)
-        }
       }
     }
   }
 
-  private def sendVersionString(out: OutputStream, clientVersion: String) {
-    out.write((clientVersion+ "\r\n").getBytes)
   }
-
-
-  private def recvVersionString(in :InputStream) : String = {
-    val reader = new BufferedReader(new InputStreamReader(in))
-    var serverString = ""
-    //"SSH-"  で開始しない文字列は無視する
-    do {
-      serverString = reader.readLine
-    } while (!serverString.startsWith("SSH-"))
-    serverString
-  }
-}
 
