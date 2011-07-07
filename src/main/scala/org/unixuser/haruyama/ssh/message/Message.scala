@@ -18,7 +18,7 @@ trait Message extends Product {
         case t: SSHDataType => {
           arrayBuffer ++= t.toBytes
         }
-        case to: TraversableOnce[Any] => addArrayBuffer(to, arrayBuffer)
+        case to: TraversableOnce[_] => addArrayBuffer(to, arrayBuffer)
         case _ => throw new IllegalArgumentException
       }
     }
