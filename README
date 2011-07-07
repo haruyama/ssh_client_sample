@@ -21,13 +21,15 @@ use sbt 0.10.*(Simple Build Tool, https://github.com/harrah/xsbt/wiki).
 
 % sbt compile
 
-
 * Usage
 
 Ex: login sshd(localhost:22) using 'test' user (with password 'password')  and execute 'ls'.
 
 % ls ~test
 a hotate
+
+
+You can run on sbt.
 
 % sbt
 ....
@@ -44,3 +46,11 @@ a
 hotate
 
 ...
+
+Or you can generate a jar and run scala command.
+
+% sbt package
+...
+% scala -cp lib/ganymed-ssh2-build210.jar target/scala-2.9.0.final/ssh-client-sample_2.9.0-1.0.jar localhost 22 test password ls
+a
+hotate
