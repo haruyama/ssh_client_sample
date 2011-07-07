@@ -6,6 +6,8 @@ import org.unixuser.haruyama.ssh.datatype.SSHUInt32
 import org.unixuser.haruyama.ssh.message.Message
 import org.unixuser.haruyama.ssh.parser.MessageParser
 
+import org.unixuser.haruyama.ssh.userauth.UserauthMessageParser
+import org.unixuser.haruyama.ssh.connection.ConnectionMessageParser
 import java.security.SecureRandom
 import java.io._
 import java.math.BigInteger
@@ -26,11 +28,27 @@ class TransportManager(i: InputStream, o: OutputStream) {
 
   val UINT32_MAX = 4294967295L
 
-  def setOverlayParser(p : MessageParser) {
+  def useTransportContext() {
+    clearOverlayParser()
+  }
+
+  def useDhContext() {
+    setOverlayParser(new DhExchangeMessageParser)
+  }
+
+  def useUserauthContext() {
+    setOverlayParser(new UserauthMessageParser)
+  }
+
+  def useConnectionContext() {
+    setOverlayParser(new ConnectionMessageParser)
+  }
+
+  private def setOverlayParser(p : MessageParser) {
     overlayParser = Some(p)
   }
 
-  def clearOverlayParser() {
+  private def clearOverlayParser() {
     overlayParser = None
   }
 

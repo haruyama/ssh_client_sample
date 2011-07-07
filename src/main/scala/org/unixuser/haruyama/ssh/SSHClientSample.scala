@@ -169,19 +169,19 @@ object SSHClientSample {
 
     val (clientKexinit, serverKexinit) = negotiateAlgorithm(transportManager)
 
-    transportManager.setOverlayParser(new DhExchangeMessageParser)
+    transportManager.useDhContext
     val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
       clientKexinit, serverKexinit)
 
-    transportManager.clearOverlayParser
+    transportManager.useTransportContext
     exchangeNewkeys(transportManager)
 
     transportManager.changeKey(h, k)
 
-    transportManager.setOverlayParser(new UserauthMessageParser)
+    transportManager.useUserauthContext
     userauthPassword(transportManager, user, pass)
 
-    transportManager.setOverlayParser(new ConnectionMessageParser)
+    transportManager.useConnectionContext
     execCommand(transportManager, command)
 
     disconnect(transportManager)
@@ -192,25 +192,24 @@ object SSHClientSample {
 
     if (args.length < 5) {
       throw new IllegalArgumentException("please run 'scala SSHClientSample [host] [port] [user] [pass] [command]'")
-  }
-  val host = args(0)
-  val port = args(1).toInt
-  val user = args(2)
-  val pass = args(3)
-  val command = args(4)
-
-
-  val ia = InetAddress.getByName(host)
-  using(new Socket(ia, port)) { socket =>
-    using(socket.getOutputStream) { out =>
-      using(socket.getInputStream) { in =>
-
-        ssh(in, out, user, pass, command)
-
     }
+    val host = args(0)
+    val port = args(1).toInt
+    val user = args(2)
+    val pass = args(3)
+    val command = args(4)
+
+
+    val ia = InetAddress.getByName(host)
+    using(new Socket(ia, port)) { socket =>
+      using(socket.getOutputStream) { out =>
+        using(socket.getInputStream) { in =>
+
+          ssh(in, out, user, pass, command)
+
+        }
       }
     }
   }
-
-  }
+}
 
