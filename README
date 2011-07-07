@@ -3,19 +3,25 @@
 This is a SSH Client but not a practical SSH Client.
 I suppose that this helps us understand SSH Protocol.
 
-I confirm that this works only for Debian sid's sshd "SSH-2.0-OpenSSH_5.8p1 Debian-4".
+I confirm that this works for Debian sid's sshd "SSH-2.0-OpenSSH_5.8p1 Debian-4".
 
 * License
 
 This software (except lib/ganymed-ssh2-*.jar) is a public domain.
 
-lib/ganymed-ssh2-*.jar is/are "Ganymed SSH-2 for Java(http://www.ganymed.ethz.ch/ssh2/)" 
-and is/are redistributed under LICENSE.GANYMED.
-Please see LICENSE.GANYMED.
+* Prerequisite
+
+1. download Ganymed SSH-2 for Java Library via http://www.ganymed.ethz.ch/ssh2/ganymed-ssh2-build210.zip.
+2. unzip anymed-ssh2-build210.zip ganymed-ssh2-build210/ganymed-ssh2-build210.jar
+3. mv ganymed-ssh2-build210.jar to lib directory.
+
+* Build
+
+use sbt(Simple Build Tool, https://github.com/harrah/xsbt/wiki).
 
 * Usage
 
-login 'test' user and execute 'ls'
+login sshd(localhost:22) using 'test' user (with password "password")  and execute 'ls'.
 
 % ls ~test
 a hotate
@@ -23,11 +29,15 @@ a hotate
 % sbt
 ....
 
-> run localhost 22 test test ls
+> run
+...
+java.lang.IllegalArgumentException: please run 'scala SSHClientSample [host] [port] [user] [pass] [command]'
+...
+
+> run localhost 22 test password ls
 ...
 
 a
 hotate
 
 ...
-
