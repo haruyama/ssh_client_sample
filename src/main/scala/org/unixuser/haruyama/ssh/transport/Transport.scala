@@ -127,7 +127,7 @@ abstract class Transport(i: InputStream, o: OutputStream) {
 private class UnencryptedTransport(i: InputStream, o: OutputStream) extends
 Transport(i, o) {
 
-  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = {
+  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = synchronized {
     val lengthBytes = new Array[Byte](4)
     if (in.read(lengthBytes, 0, 4) == -1) {
       throw new RuntimeException
@@ -150,7 +150,7 @@ Transport(i, o) {
     message
   }
 
-  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber: Long) {
+  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber: Long) = synchronized {
     val packet = packPayload(bytes, 8)
     out.write(packet)
     out.flush
@@ -175,7 +175,7 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
   private val macC2S    = new MAC("hmac-sha1", km.integrity_key_client_to_server)
   private val macS2C    = new MAC("hmac-sha1", km.integrity_key_server_to_client)
 
-  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = {
+  override def recvMessageBytes(recvSeqNumber: Long) : Array[Byte] = synchronized {
     val buf = new Array[Byte](CIPHERS2C_BLOCK_SIZE)
     if (in.read(buf, 0, CIPHERS2C_BLOCK_SIZE) == -1) {
       throw new RuntimeException
@@ -215,7 +215,7 @@ private class EncryptedTransport(i: InputStream, o: OutputStream, sessionId: Arr
   }
 
 
-  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber : Long) {
+  override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber : Long) = synchronized {
     val packet = packPayload(bytes, CIPHERC2S_BLOCK_SIZE)
     val mac = new Array[Byte](MACC2S_SIZE)
     macC2S.initMac(sendSeqNumber.toInt)
