@@ -84,25 +84,26 @@ object ConnectionMessageBuilder {
 
 
 class ConnectionMessageParser extends MessageParser {
-  lazy val channelOpenConfirmation = messageId(ConnectionConstant.SSH_MSG_CHANNEL_OPEN_CONFIRMATION) ~ uint32 ~ uint32 ~ uint32 ~ uint32 ^^
+
+  private lazy val channelOpenConfirmation = messageId(ConnectionConstant.SSH_MSG_CHANNEL_OPEN_CONFIRMATION) ~ uint32 ~ uint32 ~ uint32 ~ uint32 ^^
   {case id~rc~sc~iws~mps => ChannelOpenConfirmation(id, rc, sc, iws, mps)}
 
-  lazy val channelWindowAdjust = messageId(ConnectionConstant.SSH_MSG_CHANNEL_WINDOW_ADJUST) ~ uint32 ~ uint32 ^^
+  private lazy val channelWindowAdjust = messageId(ConnectionConstant.SSH_MSG_CHANNEL_WINDOW_ADJUST) ~ uint32 ~ uint32 ^^
   {case id~rc~bta => ChannelWindowAdjust(id, rc, bta)}
 
-  lazy val channelData = messageId(ConnectionConstant.SSH_MSG_CHANNEL_DATA) ~ uint32 ~ string ^^
+  private lazy val channelData = messageId(ConnectionConstant.SSH_MSG_CHANNEL_DATA) ~ uint32 ~ string ^^
   {case id~rc~data => ChannelData(id, rc, data)}
 
-  lazy val channelEof = messageId(ConnectionConstant.SSH_MSG_CHANNEL_EOF) ~ uint32 ^^
+  private lazy val channelEof = messageId(ConnectionConstant.SSH_MSG_CHANNEL_EOF) ~ uint32 ^^
   {case id~rc => ChannelEof(id, rc)}
 
-  lazy val channelExitStatus = messageId(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST) ~ uint32 ~ specifiedString("exit-status") ~ boolean ~ uint32 ^^
+  private lazy val channelExitStatus = messageId(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST) ~ uint32 ~ specifiedString("exit-status") ~ boolean ~ uint32 ^^
   {case id~rc~s~wr~es => ChannelRequestExitStatus(id, rc, s, wr, es)}
 
-  lazy val channelClose = messageId(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE) ~ uint32 ^^
+  private lazy val channelClose = messageId(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE) ~ uint32 ^^
   {case id~rc => ChannelClose(id, rc)}
 
-  lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus | channelClose
+  private lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus | channelClose
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](connectionMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](connectionMessage, bytes)

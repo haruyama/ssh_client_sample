@@ -39,11 +39,12 @@ object UserauthMessageBuilder {
 
 class UserauthMessageParser extends MessageParser {
 
-  lazy val userauthFailure = messageId(UserauthConstant.SSH_MSG_USERAUTH_FAILURE) ~ namelist ~ boolean ^^ {case id~auth~ps =>
+  private lazy val userauthFailure = messageId(UserauthConstant.SSH_MSG_USERAUTH_FAILURE) ~ namelist ~ boolean ^^ {case id~auth~ps =>
   UserauthFailure(id, auth, ps)}
-  lazy val userauthSuccess = messageId(UserauthConstant.SSH_MSG_USERAUTH_SUCCESS) ^^ {(b :SSHByte)=> UserauthSuccess(b)}
 
-  lazy val userauthMessage = userauthFailure | userauthSuccess
+  private lazy val userauthSuccess = messageId(UserauthConstant.SSH_MSG_USERAUTH_SUCCESS) ^^ {(b :SSHByte)=> UserauthSuccess(b)}
+
+  private lazy val userauthMessage = userauthFailure | userauthSuccess
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](userauthMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](userauthMessage, bytes)

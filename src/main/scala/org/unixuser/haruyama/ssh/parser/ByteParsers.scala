@@ -15,34 +15,34 @@ trait ByteParsers extends Parsers {
     return SSHBoolean(true)
   }
 
-  def toSSHByte(byte: Byte) : SSHByte = {
+  protected def toSSHByte(byte: Byte) : SSHByte = {
     SSHByte((byte & 0xff).toShort)
   }
 
-  def toSSHString(bytes: Seq[Byte]) : SSHString = {
+  protected def toSSHString(bytes: Seq[Byte]) : SSHString = {
     SSHString(bytes.toArray)
   }
 
-  def toSSHUInt32(bytes: Seq[Byte]) : SSHUInt32 = {
+  protected def toSSHUInt32(bytes: Seq[Byte]) : SSHUInt32 = {
     SSHUInt32(((bytes(0) & 0xff).toLong << 24) + ((bytes(1) & 0xff).toLong << 16) + ((bytes(2) & 0xff).toLong << 8) + (bytes(3) & 0xff).toLong)
   }
 
-  def toSSHNameList(bytes: Seq[Byte]) : SSHNameList= {
+  protected def toSSHNameList(bytes: Seq[Byte]) : SSHNameList= {
     SSHNameList(new String(bytes.toArray, "US-ASCII").split(","))
   }
 
-  def toSSHMpInt(bytes: Seq[Byte]) : SSHMpInt = {
+  protected def toSSHMpInt(bytes: Seq[Byte]) : SSHMpInt = {
     SSHMpInt(new java.math.BigInteger(bytes.toArray))
   }
 
-  lazy val elem: Parser[Elem] = elem("elem", _ => true)
-  lazy val boolean : Parser[SSHBoolean] = elem ^^ toSSHBoolean
-  lazy val byte : Parser[SSHByte] = elem ^^ toSSHByte
-  lazy val uint32: Parser[SSHUInt32] = repN(4, elem) ^^ toSSHUInt32
+  protected lazy val elem: Parser[Elem] = elem("elem", _ => true)
+  protected lazy val boolean : Parser[SSHBoolean] = elem ^^ toSSHBoolean
+  protected lazy val byte : Parser[SSHByte] = elem ^^ toSSHByte
+  protected lazy val uint32: Parser[SSHUInt32] = repN(4, elem) ^^ toSSHUInt32
   //toInt のために完全に仕様通りではない
-  lazy val string: Parser[SSHString] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHString
-  lazy val namelist: Parser[SSHNameList] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHNameList
-  lazy val mpint: Parser[SSHMpInt] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHMpInt
+  protected lazy val string: Parser[SSHString] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHString
+  protected lazy val namelist: Parser[SSHNameList] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHNameList
+  protected lazy val mpint: Parser[SSHMpInt] = uint32 >> (l => repN(l.value.toInt, elem)) ^^ toSSHMpInt
 
   def parse[T](p: Parser[T], in: Input): ParseResult[T] = p(in)
   def parse[T](p: Parser[T], bytes: Seq[Byte]): ParseResult[T] = parse(p, new ByteReader(bytes))
@@ -50,11 +50,11 @@ trait ByteParsers extends Parsers {
 }
 
 abstract class MessageParser extends ByteParsers {
-  def messageId(id : SSHByte)  : Parser[SSHByte] = {
+  protected def messageId(id : SSHByte)  : Parser[SSHByte] = {
     accept(id.value.toByte) ^^ toSSHByte
   }
 
-  def specifiedString(s: String) : Parser[SSHString] = {
+  protected def specifiedString(s: String) : Parser[SSHString] = {
     val sshStr = SSHString(s.getBytes)
     acceptSeq(sshStr.toBytes) ^^ {_ => sshStr}
   }

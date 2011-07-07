@@ -29,10 +29,10 @@ object DhExchangeMessageBuilder {
 
 class DhExchangeMessageParser extends MessageParser {
 
-  lazy val kexDhReply = messageId(DhExchangeConstant.SSH_MSG_KEXDH_REPLY) ~ string ~ mpint ~ string ^^ {case id~hostKey~f~sigOfH =>
+  private lazy val kexDhReply = messageId(DhExchangeConstant.SSH_MSG_KEXDH_REPLY) ~ string ~ mpint ~ string ^^ {case id~hostKey~f~sigOfH =>
     KexdhReply(id, hostKey, f, sigOfH)}
 
-  lazy val dhExchageMessage = kexDhReply
+  private lazy val dhExchageMessage = kexDhReply
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](dhExchageMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](dhExchageMessage, bytes)

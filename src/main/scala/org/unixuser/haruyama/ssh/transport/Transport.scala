@@ -45,7 +45,7 @@ class TransportManager(i: InputStream, o: OutputStream) {
   }
 
 
-  def parseMessage(bytes: Array[Byte]) : Message = {
+  private def parseMessage(bytes: Array[Byte]) : Message = {
     val transportResult = transportParser.parseAll(bytes)
     if (transportResult.successful) {
       // SSH_MSG_DISCONNECT, SSH_MSG_IGNORE, SSH_MSG_DEBUG はここで処理し伝播させないほうがよさそう

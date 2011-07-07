@@ -84,24 +84,24 @@ object TransportMessageBuilder {
 
 class TransportMessageParser extends MessageParser {
 
-  lazy val newkeys : Parser[Newkeys] = messageId(TransportConstant.SSH_MSG_NEWKEYS) ^^ {(b :SSHByte)=> Newkeys(b)}
+  private lazy val newkeys : Parser[Newkeys] = messageId(TransportConstant.SSH_MSG_NEWKEYS) ^^ {(b :SSHByte)=> Newkeys(b)}
 
-  lazy val serviceRequest: Parser[ServiceRequest] = messageId(TransportConstant.SSH_MSG_SERVICE_REQUEST) ~ string ^^
+  private lazy val serviceRequest: Parser[ServiceRequest] = messageId(TransportConstant.SSH_MSG_SERVICE_REQUEST) ~ string ^^
   {case id~name => ServiceRequest(id, name)}
 
-  lazy val serviceAccept: Parser[ServiceAccept] = messageId(TransportConstant.SSH_MSG_SERVICE_ACCEPT) ~ string ^^
+  private lazy val serviceAccept: Parser[ServiceAccept] = messageId(TransportConstant.SSH_MSG_SERVICE_ACCEPT) ~ string ^^
   {case id~name => ServiceAccept(id, name)}
 
 
-  lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~
+  private lazy val kexinit : Parser[Kexinit] = messageId(TransportConstant.SSH_MSG_KEXINIT) ~ repN(16, byte) ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~ namelist ~
   namelist ~ namelist ~ namelist ~ namelist ~ boolean ~ uint32 ^^
   {case id~cookie~kex~hostkey~cipherc2s~ciphers2c~macc2s~macs2c~compc2s~comps2c~langc2s~langs2c~first~reserved =>
     Kexinit(id,cookie,kex,hostkey,cipherc2s,ciphers2c,macc2s,macs2c,compc2s,comps2c,langc2s,langs2c,first,reserved)
   }
 
-  lazy val disconnect : Parser[Disconnect] = messageId(TransportConstant.SSH_MSG_DISCONNECT) ^^ {(b :SSHByte)=> Disconnect(b)}
+  private lazy val disconnect : Parser[Disconnect] = messageId(TransportConstant.SSH_MSG_DISCONNECT) ^^ {(b :SSHByte)=> Disconnect(b)}
 
-  lazy val transportMessage = newkeys | serviceRequest | serviceAccept | kexinit | disconnect
+  private lazy val transportMessage = newkeys | serviceRequest | serviceAccept | kexinit | disconnect
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](transportMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](transportMessage, bytes)
