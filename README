@@ -7,21 +7,24 @@ I confirm that this works for Debian sid's sshd "SSH-2.0-OpenSSH_5.8p1 Debian-4"
 
 * License
 
-This software (except lib/ganymed-ssh2-*.jar) is a public domain.
+This software is a public domain.
 
 * Prerequisite
 
 1. download Ganymed SSH-2 for Java Library via http://www.ganymed.ethz.ch/ssh2/ganymed-ssh2-build210.zip.
-2. unzip anymed-ssh2-build210.zip ganymed-ssh2-build210/ganymed-ssh2-build210.jar
-3. mv ganymed-ssh2-build210.jar to lib directory.
+2. unzip 'ganymed-ssh2-build210/ganymed-ssh2-build210.jar' from 'ganymed-ssh2-build210.zip'.
+3. move 'ganymed-ssh2-build210/ganymed-ssh2-build210.jar' to 'lib' directory.
 
 * Build
 
-use sbt(Simple Build Tool, https://github.com/harrah/xsbt/wiki).
+use sbt 0.10.*(Simple Build Tool, https://github.com/harrah/xsbt/wiki).
+
+% sbt compile
+
 
 * Usage
 
-login sshd(localhost:22) using 'test' user (with password "password")  and execute 'ls'.
+Ex: login sshd(localhost:22) using 'test' user (with password 'password')  and execute 'ls'.
 
 % ls ~test
 a hotate
