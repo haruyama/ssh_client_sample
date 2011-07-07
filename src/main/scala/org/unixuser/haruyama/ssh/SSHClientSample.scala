@@ -108,7 +108,15 @@ object SSHClientSample {
 
 
     transport.sendMessage(UserauthMessageBuilder.buildUserauthRequestPassword(user, pass))
-    val userauthResult = transport.recvMessage().asInstanceOf[UserauthSuccess]
+    val userauthResult = transport.recvMessage()
+
+    userauthResult match {
+      case success : UserauthSuccess =>
+      case UserauthFailure(id, authentications, partialSuccess) =>
+        println("Userauth failed")
+        println(authentications)
+        throw new RuntimeException("Uearauth failed")
+    }
   }
 
   private def execCommand(transport: TransportManager, command : String) {

@@ -24,7 +24,7 @@ case class UserauthRequestPassword(messageId: SSHByte, userName: SSHString, serv
   assert(methodName == SSHString("password".getBytes))
 }
 
-case class UserauthFailure(messageId: SSHByte) extends UserauthMessage {
+case class UserauthFailure(messageId: SSHByte, authentications: SSHNameList, partialSuccess: SSHBoolean) extends UserauthMessage {
   assert(messageId == UserauthConstant.SSH_MSG_USERAUTH_FAILURE)
 }
 case class UserauthSuccess(messageId: SSHByte) extends UserauthMessage {
@@ -39,7 +39,8 @@ object UserauthMessageBuilder {
 
 class UserauthMessageParser extends MessageParser {
 
-  lazy val userauthFailure = messageId(UserauthConstant.SSH_MSG_USERAUTH_FAILURE) ^^ {(b :SSHByte)=> UserauthFailure(b)}
+  lazy val userauthFailure = messageId(UserauthConstant.SSH_MSG_USERAUTH_FAILURE) ~ namelist ~ boolean ^^ {case id~auth~ps =>
+  UserauthFailure(id, auth, ps)}
   lazy val userauthSuccess = messageId(UserauthConstant.SSH_MSG_USERAUTH_SUCCESS) ^^ {(b :SSHByte)=> UserauthSuccess(b)}
 
   lazy val userauthMessage = userauthFailure | userauthSuccess
