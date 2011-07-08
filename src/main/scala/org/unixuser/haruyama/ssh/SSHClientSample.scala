@@ -3,9 +3,6 @@ package org.unixuser.haruyama.ssh
 import org.unixuser.haruyama.ssh.transport._
 import org.unixuser.haruyama.ssh.userauth._
 import org.unixuser.haruyama.ssh.connection._
-//import org.unixuser.haruyama.ssh.channel._
-
-import scala.actors._
 
 import java.io._
 import java.net.{ InetAddress, ServerSocket, Socket, SocketException }
@@ -13,29 +10,24 @@ import java.math.BigInteger
 import java.security.SecureRandom
 
 import ch.ethz.ssh2.crypto.dh.DhExchange
-import ch.ethz.ssh2.signature.RSAPublicKey
-import ch.ethz.ssh2.signature.RSASHA1Verify
-import ch.ethz.ssh2.signature.RSASignature
+import ch.ethz.ssh2.signature.{RSAPublicKey, RSASHA1Verify, RSASignature}
 import ch.ethz.ssh2.crypto.KeyMaterial
-import ch.ethz.ssh2.crypto.cipher.BlockCipher
-import ch.ethz.ssh2.crypto.cipher.BlockCipherFactory
+import ch.ethz.ssh2.crypto.cipher.{BlockCipher, BlockCipherFactory}
 import ch.ethz.ssh2.crypto.digest.MAC
 
-
-
 object SSHClientSample {
+
   val CLIENT_VERSION = "SSH-2.0-Sample"
 
   private def using[A <% { def close():Unit }](s: A)(f: A=>Any) {
     try f(s) finally s.close()
   }
 
-
   private def sendVersionString(out: OutputStream, clientVersion: String) {
     out.write((clientVersion+ "\r\n").getBytes)
   }
 
-  private def recvVersionString(in :InputStream) : String = {
+  private def recvVersionString(in:InputStream): String = {
     val reader = new BufferedReader(new InputStreamReader(in))
     var serverString = ""
     //"SSH-"  で開始しない文字列は無視する
@@ -43,9 +35,9 @@ object SSHClientSample {
       serverString = reader.readLine
     } while (!serverString.startsWith("SSH-"))
     serverString
-    }
+  }
 
-  private def exchangeVersion(in: InputStream, out: OutputStream, clientVersion : String) = {
+  private def exchangeVersion(in: InputStream, out: OutputStream, clientVersion: String) = {
     //version文字列の交換
     //CR LF 集団の文字列でやりとりされる
     sendVersionString(out, clientVersion)
@@ -56,8 +48,7 @@ object SSHClientSample {
     serverVersion
   }
 
-
-  private def negotiateAlgorithm(transport : TransportManager) = {
+  private def negotiateAlgorithm(transport: TransportManager) = {
     //以後はSSHのパケットでやりとりされる
 
     //サーバから KEXINIT メッセージを受け取る
@@ -78,7 +69,7 @@ object SSHClientSample {
     (clientKexinit, serverKexinit)
   }
 
-  private def exchangeKeys(transport : TransportManager, clientVersion: String, serverVersion: String, clientKexinit : Kexinit, serverKexinit: Kexinit) = {
+  private def exchangeKeys(transport: TransportManager, clientVersion: String, serverVersion: String, clientKexinit: Kexinit, serverKexinit: Kexinit) = {
 
     //diffie-hellman-group1-sha1 鍵交換法を行なう準備
     val dhx = new DhExchange
@@ -105,7 +96,7 @@ object SSHClientSample {
     if (!RSASHA1Verify.verifySignature(h, rs, rpk)) new RuntimeException("RSA Key is not verified")
 
     // 交換ハッシュ H と 共有の秘密 K を返す
-  (h, dhx.getK)
+    (h, dhx.getK)
   }
 
   private def exchangeNewkeys(transport: TransportManager) {
@@ -120,20 +111,20 @@ object SSHClientSample {
     transport.sendMessage(TransportMessageBuilder.buildServiceRequest("ssh-userauth"))
     val serviceRequestResult = transport.recvMessage().asInstanceOf[ServiceAccept]
 
-
     transport.sendMessage(UserauthMessageBuilder.buildUserauthRequestPassword(user, pass))
     val userauthResult = transport.recvMessage()
 
     userauthResult match {
-      case success : UserauthSuccess =>
+      case success: UserauthSuccess =>
       case UserauthFailure(id, authentications, partialSuccess) =>
         println("Userauth failed")
         println(authentications)
         throw new RuntimeException("Uearauth failed")
-  }
     }
+  }
 
-  private def execCommand(transport: TransportManager, command : String) {
+  private def execCommand(transport: TransportManager, command: String) {
+
     val senderChannel = 0
     var windowSize = 32678
     val maximumPacketSize = 32678
@@ -185,7 +176,6 @@ object SSHClientSample {
     execCommand(transportManager, command)
 
     disconnect(transportManager)
-
   }
 
   def main(args: Array[String]) = {
@@ -193,12 +183,12 @@ object SSHClientSample {
     if (args.length < 5) {
       throw new IllegalArgumentException("please run 'scala SSHClientSample [host] [port] [user] [pass] [command]'")
     }
+
     val host = args(0)
     val port = args(1).toInt
     val user = args(2)
     val pass = args(3)
     val command = args(4)
-
 
     val ia = InetAddress.getByName(host)
     using(new Socket(ia, port)) { socket =>
