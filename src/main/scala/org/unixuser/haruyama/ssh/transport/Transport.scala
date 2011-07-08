@@ -116,7 +116,7 @@ abstract class Transport(i: InputStream, o: OutputStream) {
     l.toInt
   }
 
-  protected def packPayload(message: Array[Byte], blockSize: Int) : Array[Byte] = {
+  def packPayload(message: Array[Byte], blockSize: Int) : Array[Byte] = {
     val remainder = (1 + message.size + UINT32_SIZE) % blockSize
 
     val padding_length =
