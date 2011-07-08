@@ -149,10 +149,6 @@ object SSHClientSample {
     val channelClose = transport.recvMessage().asInstanceOf[ChannelClose]
   }
 
-  private def disconnect(transport: TransportManager) {
-    transport.sendMessage(TransportMessageBuilder.buildDisconnect())
-  }
-
   private def ssh(in: InputStream, out: OutputStream, user: String, pass: String, command: String) {
 
     val serverVersion = exchangeVersion(in, out, CLIENT_VERSION)
@@ -174,8 +170,6 @@ object SSHClientSample {
 
     transportManager.useConnectionContext
     execCommand(transportManager, command)
-
-    disconnect(transportManager)
   }
 
   def main(args: Array[String]) = {
