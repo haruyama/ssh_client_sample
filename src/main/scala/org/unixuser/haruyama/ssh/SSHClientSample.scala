@@ -160,7 +160,6 @@ object SSHClientSample {
     val (h, k) = exchangeKeys(transportManager, CLIENT_VERSION, serverVersion,
       clientKexinit, serverKexinit)
 
-    transportManager.useTransportContext
     exchangeNewkeys(transportManager)
 
     transportManager.changeKey(h, k)
