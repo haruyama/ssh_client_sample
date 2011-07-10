@@ -53,6 +53,9 @@ class TransportManager(i: InputStream, o: OutputStream) {
   }
 
   def changeKey(h : Array[Byte], k : BigInteger) {
+    // rekey をサポートするならば, 古いトランスポートを利用する通信がなくなったあとで
+    // 切り替えを行なわなければならない.
+    // この実装では省略する.
     transport =
       sessionId match {
         case Some(sid) => new EncryptedTransport(i, o, sid, h, k)
@@ -66,7 +69,7 @@ class TransportManager(i: InputStream, o: OutputStream) {
   private def parseMessage(bytes: Array[Byte]) : Message = {
     val transportResult = transportParser.parseAll(bytes)
     if (transportResult.successful) {
-      // SSH_MSG_DISCONNECT, SSH_MSG_IGNORE, SSH_MSG_DEBUG はここで処理し伝播させないほうがよさそう
+      // SSH_MSG_DISCONNECT, SSH_MSG_IGNORE, SSH_MSG_DEBUG はここで処理し伝播させないほうがよいだろう
       // ここでは省略する
       return transportResult.get
     }
@@ -107,6 +110,7 @@ abstract class Transport(i: InputStream, o: OutputStream) {
 
   val UINT32_SIZE = 4
   val MINIMUM_PADDING_LENGTH = 4
+  val MIN_PACKET_BLOCK_SIZE = 8
 
   def recvMessageBytes(recvSeqNumber : Long) : Array[Byte]
 
@@ -169,7 +173,7 @@ Transport(i, o) {
   }
 
   override def sendMessageBytes(bytes: Array[Byte], sendSeqNumber: Long) = synchronized {
-    val packet = packPayload(bytes, 8)
+    val packet = packPayload(bytes, MIN_PACKET_BLOCK_SIZE)
     out.write(packet)
     out.flush
   }
