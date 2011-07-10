@@ -48,11 +48,11 @@ object SSHClientSample {
     serverVersion
   }
 
-  private def negotiateAlgorithm(transport: TransportManager) = {
+  private def negotiateAlgorithm(transportManager: TransportManager) = {
     //以後はSSHのパケットでやりとりされる
 
     //サーバから KEXINIT メッセージを受け取る
-    val serverKexinit = transport.recvMessage().asInstanceOf[Kexinit]
+    val serverKexinit = transportManager.recvMessage().asInstanceOf[Kexinit]
 
     //クライアントから KEXINIT メッセージを送る
     //この実装はアルゴリズムをそれぞれ1つのみサポートし，
@@ -63,13 +63,13 @@ object SSHClientSample {
       List("hmac-sha1"), List("hmac-sha1"),
       List("none"), List("none"),
       List(), List(), false)
-    transport.sendMessage(clientKexinit)
+    transportManager.sendMessage(clientKexinit)
 
     //交換ハッシュ H の計算に必要なのでこれらを返す
     (clientKexinit, serverKexinit)
   }
 
-  private def exchangeKeys(transport: TransportManager, clientVersion: String, serverVersion: String, clientKexinit: Kexinit, serverKexinit: Kexinit) = {
+  private def exchangeKeys(transportManager: TransportManager, clientVersion: String, serverVersion: String, clientKexinit: Kexinit, serverKexinit: Kexinit) = {
 
     //diffie-hellman-group1-sha1 鍵交換法を行なう準備
     val dhx = new DhExchange
@@ -77,10 +77,10 @@ object SSHClientSample {
 
     // KEXDH_INIT メッセージを送信
     val kexdhInit = DhExchangeMessageBuilder.buildKexdhInit(dhx.getE())
-    transport.sendMessage(kexdhInit)
+    transportManager.sendMessage(kexdhInit)
 
     // KEYDH_REPLY メッセージを受信
-    val kexDhReply = transport.recvMessage().asInstanceOf[KexdhReply]
+    val kexDhReply = transportManager.recvMessage().asInstanceOf[KexdhReply]
 
     // 本来は KEYDH_REPLY にホスト公開鍵をローカルなデータベースなどで検証し
     // 接続先ホストを認証しなければならない．ここでは省略する
@@ -99,20 +99,20 @@ object SSHClientSample {
     (h, dhx.getK)
   }
 
-  private def exchangeNewkeys(transport: TransportManager) {
+  private def exchangeNewkeys(transportManager: TransportManager) {
     //NEWKEYS メッセージを交換
     //新しい鍵になったことを知らせあう(鍵自体は送らない)
-    val serverNewkeys = transport.recvMessage().asInstanceOf[Newkeys]
-    transport.sendMessage(TransportMessageBuilder.buildNewkeys)
+    val serverNewkeys = transportManager.recvMessage().asInstanceOf[Newkeys]
+    transportManager.sendMessage(TransportMessageBuilder.buildNewkeys)
   }
 
-  private def userauthPassword(transport: TransportManager, user: String, pass: String) {
+  private def userauthPassword(transportManager: TransportManager, user: String, pass: String) {
 
-    transport.sendMessage(TransportMessageBuilder.buildServiceRequest("ssh-userauth"))
-    val serviceRequestResult = transport.recvMessage().asInstanceOf[ServiceAccept]
+    transportManager.sendMessage(TransportMessageBuilder.buildServiceRequest("ssh-userauth"))
+    val serviceRequestResult = transportManager.recvMessage().asInstanceOf[ServiceAccept]
 
-    transport.sendMessage(UserauthMessageBuilder.buildUserauthRequestPassword(user, pass))
-    val userauthResult = transport.recvMessage()
+    transportManager.sendMessage(UserauthMessageBuilder.buildUserauthRequestPassword(user, pass))
+    val userauthResult = transportManager.recvMessage()
 
     userauthResult match {
       case success: UserauthSuccess =>
@@ -123,30 +123,30 @@ object SSHClientSample {
     }
   }
 
-  private def execCommand(transport: TransportManager, command: String) {
+  private def execCommand(transportManager: TransportManager, command: String) {
 
     val senderChannel = 0
     var windowSize = 32678
     val maximumPacketSize = 32678
-    transport.sendMessage(ConnectionMessageBuilder.buildChannelOpenSession(senderChannel, windowSize, maximumPacketSize))
-    val channelOpenConfirmation = transport.recvMessage().asInstanceOf[ChannelOpenConfirmation]
+    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelOpenSession(senderChannel, windowSize, maximumPacketSize))
+    val channelOpenConfirmation = transportManager.recvMessage().asInstanceOf[ChannelOpenConfirmation]
     //    println(channelOpenConfirmation)
     val recipientChannel = channelOpenConfirmation.recipientChannel.value
 
-    transport.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(recipientChannel, command))
+    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(recipientChannel, command))
 
-    val channelWindowAdjust = transport.recvMessage().asInstanceOf[ChannelWindowAdjust]
+    val channelWindowAdjust = transportManager.recvMessage().asInstanceOf[ChannelWindowAdjust]
 
-    val channelData =  transport.recvMessage().asInstanceOf[ChannelData]
+    val channelData =  transportManager.recvMessage().asInstanceOf[ChannelData]
     println(new String(channelData.data.value))
 
-    val channelEof = transport.recvMessage().asInstanceOf[ChannelEof]
+    val channelEof = transportManager.recvMessage().asInstanceOf[ChannelEof]
 
-    val channelExitStatus = transport.recvMessage().asInstanceOf[ChannelRequestExitStatus]
+    val channelExitStatus = transportManager.recvMessage().asInstanceOf[ChannelRequestExitStatus]
 
-    transport.sendMessage(ConnectionMessageBuilder.buildChannelClose(recipientChannel))
+    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelClose(recipientChannel))
 
-    val channelClose = transport.recvMessage().asInstanceOf[ChannelClose]
+    val channelClose = transportManager.recvMessage().asInstanceOf[ChannelClose]
   }
 
   private def ssh(in: InputStream, out: OutputStream, user: String, pass: String, command: String) {
