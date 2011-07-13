@@ -38,21 +38,25 @@ object SSHClientSample {
   }
 
   private def exchangeVersion(in: InputStream, out: OutputStream, clientVersion: String) = {
-    //version文字列の交換
-    //CR LF 集団の文字列でやりとりされる
+    //バージョン文字列の交換
+    //CR LF 区切りの文字列でやりとりする
+
+    //クライアントからバージョン文字列を送る
     sendVersionString(out, clientVersion)
+
+    //サーバからバージョン文字列を受け取る
     val serverVersion = recvVersionString(in)
-    //    println("client SSH version: " + clientVersion)
-    //    println("server SSH version: " + serverVersion)
-    //version のすり合わせは省略する
+
+    //version のすり合わせは省略している
+
+    //クライアントとサーバのバージョン文字列は鍵の生成で利用するので
+    //サーバのバージョン文字列を返す
     serverVersion
   }
 
   private def negotiateAlgorithm(transportManager: TransportManager) = {
     //以後はSSHのパケットでやりとりされる
 
-    //サーバから KEXINIT メッセージを受け取る
-    val serverKexinit = transportManager.recvMessage().asInstanceOf[Kexinit]
 
     //クライアントから KEXINIT メッセージを送る
     //この実装はアルゴリズムをそれぞれ1つのみサポートし，
@@ -64,6 +68,9 @@ object SSHClientSample {
       List("none"), List("none"),
       List(), List(), false)
     transportManager.sendMessage(clientKexinit)
+
+    //サーバから KEXINIT メッセージを受け取る
+    val serverKexinit = transportManager.recvMessage().asInstanceOf[Kexinit]
 
     //交換ハッシュ H の計算に必要なのでこれらを返す
     (clientKexinit, serverKexinit)
