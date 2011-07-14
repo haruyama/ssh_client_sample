@@ -57,7 +57,6 @@ object SSHClientSample {
   private def negotiateAlgorithm(transportManager: TransportManager) = {
     //以後はSSHのパケットでやりとりされる
 
-
     //クライアントから KEXINIT メッセージを送る
     //この実装はアルゴリズムをそれぞれ1つのみサポートし，
     //アルゴリズムに依存した実装を行なう
@@ -72,7 +71,12 @@ object SSHClientSample {
     //サーバから KEXINIT メッセージを受け取る
     val serverKexinit = transportManager.recvMessage().asInstanceOf[Kexinit]
 
-    //交換ハッシュ H の計算に必要なのでこれらを返す
+    //アルゴリズムのネゴシエーションが本来は必要
+    //この実装では, クライアント側が1つずつ指定したアルゴリズムが
+    //受け入れられたと仮定して先に進む
+
+    //クライアントとサーバのKEXINITメッセージが鍵の生成に必要なので
+    //以下を返す
     (clientKexinit, serverKexinit)
   }
 
