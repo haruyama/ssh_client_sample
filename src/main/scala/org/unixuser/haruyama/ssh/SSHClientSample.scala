@@ -87,14 +87,14 @@ object SSHClientSample {
     val dhx = new DhExchange
     dhx.init(1, new SecureRandom);
 
-    // KEXDH_INIT メッセージを送信する
+    // SSH_MSG_KEXDH_INIT メッセージを送信する
     val kexdhInit = DhExchangeMessageBuilder.buildKexdhInit(dhx.getE())
     transportManager.sendMessage(kexdhInit)
 
-    // KEYDH_REPLY メッセージを受信する
+    // SSH_MSG_KEYDH_REPLY メッセージを受信する
     val kexDhReply = transportManager.recvMessage().asInstanceOf[KexdhReply]
 
-    // KEYDH_REPLY にホスト公開鍵をローカルなデータベースなどで検証し
+    // SSH_MSG_KEYDH_REPLY にホスト公開鍵をローカルなデータベースなどで検証し
     // 接続先ホストを認証しなければならない．ここでは省略する
 
     // 交換ハッシュ H を計算する
@@ -102,7 +102,7 @@ object SSHClientSample {
     val h = dhx.calculateH(clientVersion.getBytes, serverVersion.getBytes, clientKexinit.toBytes,
       serverKexinit.toBytes, kexDhReply.hostKey.value)
 
-    // KEYDH_REPLY 中に H の署名がついている．これをホスト公開鍵で検証
+    // SSH_MSG_KEYDH_REPLY 中に H の署名がついている．これをホスト公開鍵で検証する
     val rs = RSASHA1Verify.decodeSSHRSASignature(kexDhReply.sigOfH.value)
     val rpk = RSASHA1Verify.decodeSSHRSAPublicKey(kexDhReply.hostKey.value)
     if (!RSASHA1Verify.verifySignature(h, rs, rpk)) new RuntimeException("RSA Key is not verified")
