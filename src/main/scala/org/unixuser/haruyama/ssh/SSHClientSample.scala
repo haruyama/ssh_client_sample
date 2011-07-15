@@ -112,8 +112,8 @@ object SSHClientSample {
   }
 
   private def exchangeNewkeys(transportManager: TransportManager) {
-    //NEWKEYS メッセージを交換
-    //新しい鍵になったことを知らせあう(当然ながら鍵自体は送らない)
+    // SSH_MSG_NEWKEYS メッセージを交換する
+    // 新しい鍵になったことを知らせあう(当然ながら鍵自体は送らない)
     val serverNewkeys = transportManager.recvMessage().asInstanceOf[Newkeys]
     transportManager.sendMessage(TransportMessageBuilder.buildNewkeys)
   }
