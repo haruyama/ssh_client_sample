@@ -82,21 +82,22 @@ object SSHClientSample {
 
   private def exchangeKeys(transportManager: TransportManager, clientVersion: String, serverVersion: String, clientKexinit: Kexinit, serverKexinit: Kexinit) = {
 
-    //diffie-hellman-group1-sha1 鍵交換法を行なう準備
+    //ch.ethz.ssh2.crypto.dh.DhExchange を利用して
+    //diffie-hellman-group1-sha1 鍵交換法を行なう準備をする
     val dhx = new DhExchange
     dhx.init(1, new SecureRandom);
 
-    // KEXDH_INIT メッセージを送信
+    // KEXDH_INIT メッセージを送信する
     val kexdhInit = DhExchangeMessageBuilder.buildKexdhInit(dhx.getE())
     transportManager.sendMessage(kexdhInit)
 
-    // KEYDH_REPLY メッセージを受信
+    // KEYDH_REPLY メッセージを受信する
     val kexDhReply = transportManager.recvMessage().asInstanceOf[KexdhReply]
 
-    // 本来は KEYDH_REPLY にホスト公開鍵をローカルなデータベースなどで検証し
+    // KEYDH_REPLY にホスト公開鍵をローカルなデータベースなどで検証し
     // 接続先ホストを認証しなければならない．ここでは省略する
 
-    // 交換ハッシュ H を計算
+    // 交換ハッシュ H を計算する
     dhx.setF(kexDhReply.f.value)
     val h = dhx.calculateH(clientVersion.getBytes, serverVersion.getBytes, clientKexinit.toBytes,
       serverKexinit.toBytes, kexDhReply.hostKey.value)
@@ -112,7 +113,7 @@ object SSHClientSample {
 
   private def exchangeNewkeys(transportManager: TransportManager) {
     //NEWKEYS メッセージを交換
-    //新しい鍵になったことを知らせあう(鍵自体は送らない)
+    //新しい鍵になったことを知らせあう(当然ながら鍵自体は送らない)
     val serverNewkeys = transportManager.recvMessage().asInstanceOf[Newkeys]
     transportManager.sendMessage(TransportMessageBuilder.buildNewkeys)
   }
