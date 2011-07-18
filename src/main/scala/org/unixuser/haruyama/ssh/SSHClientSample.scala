@@ -124,10 +124,16 @@ object SSHClientSample {
 
   private def userauthPassword(transportManager: TransportManager, user: String, pass: String) {
 
+    // SSH_MSG_SERVICE_REQUEST で "ssh-userauth" サービスをクライアントからサーバに要求する
     transportManager.sendMessage(TransportMessageBuilder.buildServiceRequest("ssh-userauth"))
+
+    // SSH_MSG_SERVICE_ACCEPT を受信する
     val serviceRequestResult = transportManager.recvMessage().asInstanceOf[ServiceAccept]
 
+    // SSH_MSG_USERAUTH_REQUEST で "password" 認証を要求する
     transportManager.sendMessage(UserauthMessageBuilder.buildUserauthRequestPassword(user, pass))
+
+    // SSH_MSG_USERAUTH_SUCCESS か SSH_MSG_USERAUTH_FAILURE を受信する
     val userauthResult = transportManager.recvMessage()
 
     userauthResult match {
