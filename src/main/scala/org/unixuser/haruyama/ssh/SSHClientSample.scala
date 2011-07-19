@@ -146,28 +146,45 @@ object SSHClientSample {
   }
 
   private def execCommand(transportManager: TransportManager, command: String) {
+    // SSH-2.0-OpenSSH_5.8p1 Debian-4 の sshd に依存した作りになっている
+    // 他の環境では動かない可能性がある
 
+    // クライアント側のチャンネル番号
     val senderChannel = 0
+
+    // initial window size と maximum packet size 値は適当
     var windowSize = 32678
     val maximumPacketSize = 32678
+
+    // SSH_MSG_CHANNEL_OPEN を送信する
     transportManager.sendMessage(ConnectionMessageBuilder.buildChannelOpenSession(senderChannel, windowSize, maximumPacketSize))
+
+    // SSH_MSG_CHANNEL_OPEN_CONFIRMATION を受信する
     val channelOpenConfirmation = transportManager.recvMessage().asInstanceOf[ChannelOpenConfirmation]
-    //    println(channelOpenConfirmation)
+
+    // サーバ側のチャンネル番号
     val recipientChannel = channelOpenConfirmation.recipientChannel.value
 
+    // SSH_MSG_CHANNEL_REQUEST を送信する
     transportManager.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(recipientChannel, command))
 
+    // SSH_MSG_CHANNEL_WINDOW_ADJUST を受信する
     val channelWindowAdjust = transportManager.recvMessage().asInstanceOf[ChannelWindowAdjust]
 
+    // SSH_MSG_CHANNEL_DATA を受信する コマンド実行結果が含まれている
     val channelData =  transportManager.recvMessage().asInstanceOf[ChannelData]
     println(new String(channelData.data.value))
 
+    // SSH_MSG_CHANNEL_EOF を受信する
     val channelEof = transportManager.recvMessage().asInstanceOf[ChannelEof]
 
+    // SSH_MSG_CHANNEL_REQUEST を受信する
     val channelExitStatus = transportManager.recvMessage().asInstanceOf[ChannelRequestExitStatus]
 
+    // SSH_MSG_CHANNEL_CLOSE を送信する
     transportManager.sendMessage(ConnectionMessageBuilder.buildChannelClose(recipientChannel))
 
+    // SSH_MSG_CHANNEL_CLOSE を受信する
     val channelClose = transportManager.recvMessage().asInstanceOf[ChannelClose]
   }
 
