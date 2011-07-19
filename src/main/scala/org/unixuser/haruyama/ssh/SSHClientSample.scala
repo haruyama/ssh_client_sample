@@ -163,10 +163,10 @@ object SSHClientSample {
     val channelOpenConfirmation = transportManager.recvMessage().asInstanceOf[ChannelOpenConfirmation]
 
     // サーバ側のチャンネル番号
-    val recipientChannel = channelOpenConfirmation.recipientChannel.value
+    val serverChannel = channelOpenConfirmation.senderChannel.value
 
     // SSH_MSG_CHANNEL_REQUEST を送信する
-    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(recipientChannel, command))
+    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelRequestExec(serverChannel, command))
 
     // SSH_MSG_CHANNEL_WINDOW_ADJUST を受信する
     val channelWindowAdjust = transportManager.recvMessage().asInstanceOf[ChannelWindowAdjust]
@@ -182,7 +182,7 @@ object SSHClientSample {
     val channelExitStatus = transportManager.recvMessage().asInstanceOf[ChannelRequestExitStatus]
 
     // SSH_MSG_CHANNEL_CLOSE を送信する
-    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelClose(recipientChannel))
+    transportManager.sendMessage(ConnectionMessageBuilder.buildChannelClose(serverChannel))
 
     // SSH_MSG_CHANNEL_CLOSE を受信する
     val channelClose = transportManager.recvMessage().asInstanceOf[ChannelClose]
