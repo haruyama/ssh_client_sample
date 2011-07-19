@@ -171,6 +171,9 @@ object SSHClientSample {
     // SSH_MSG_CHANNEL_WINDOW_ADJUST を受信する
     val channelWindowAdjust = transportManager.recvMessage().asInstanceOf[ChannelWindowAdjust]
 
+    // SSH_MSG_CHANNEL_SUCCESS を受信する
+    val channelSuccess = transportManager.recvMessage().asInstanceOf[ChannelSuccess]
+
     // SSH_MSG_CHANNEL_DATA を受信する コマンド実行結果が含まれている
     val channelData =  transportManager.recvMessage().asInstanceOf[ChannelData]
     println(new String(channelData.data.value))

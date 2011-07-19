@@ -79,6 +79,7 @@ class TransportManager(i: InputStream, o: OutputStream) {
     val overlayResult = overlayParser.get.parseAll(bytes)
 
     if (!overlayResult.successful) {
+      println(bytes(0))
       throw new RuntimeException
     }
     overlayResult.get

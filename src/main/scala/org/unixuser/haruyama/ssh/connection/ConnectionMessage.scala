@@ -67,6 +67,10 @@ case class ChannelClose(messageId: SSHByte, recipientChannel: SSHUInt32) extends
   assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_CLOSE)
 }
 
+case class ChannelSuccess(messageId: SSHByte, recipientChannel: SSHUInt32) extends ConnectionMessage {
+  assert(messageId == ConnectionConstant.SSH_MSG_CHANNEL_SUCCESS)
+}
+
 object ConnectionMessageBuilder {
 
   def buildChannelOpenSession(senderChannel : Long, initialWindowSize: Long, maximumPacketSize: Long) = {
@@ -74,7 +78,7 @@ object ConnectionMessageBuilder {
   }
 
   def buildChannelRequestExec(recipientChannel: Long, command : String) = {
-    ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, recipientChannel, "exec", false, command)
+    ChannelRequestExec(ConnectionConstant.SSH_MSG_CHANNEL_REQUEST, recipientChannel, "exec", true, command)
   }
 
   def buildChannelClose(recipientChannel: Long) = {
@@ -103,7 +107,11 @@ class ConnectionMessageParser extends MessageParser {
   private lazy val channelClose = messageId(ConnectionConstant.SSH_MSG_CHANNEL_CLOSE) ~ uint32 ^^
   {case id~rc => ChannelClose(id, rc)}
 
-  private lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus | channelClose
+  private lazy val channelSuccess = messageId(ConnectionConstant.SSH_MSG_CHANNEL_SUCCESS) ~ uint32 ^^
+  {case id~rc => ChannelSuccess(id, rc)}
+
+  private lazy val connectionMessage = channelOpenConfirmation | channelWindowAdjust | channelData | channelEof | channelExitStatus |
+  channelClose | channelSuccess
 
   override def parse(bytes : Seq[Byte]) : ParseResult[Message] = parse[Message](connectionMessage, bytes)
   override def parseAll(bytes : Seq[Byte]) : ParseResult[Message] = parseAll[Message](connectionMessage, bytes)
