@@ -43,7 +43,7 @@ hotate
 
 Or you can generate a jar and run java command.
 
-% sbt package
+% sbt assembly:package
 ...
 % java -jar target/SSH-client-sample.jar localhost 22 test password ls
 a
