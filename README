@@ -41,10 +41,10 @@ hotate
 
 ...
 
-Or you can generate a jar and run scala command.
+Or you can generate a jar and run java command.
 
 % sbt package
 ...
-% scala -cp lib/ganymed-ssh2-build210.jar target/scala-2.9.0.final/ssh-client-sample_2.9.0-1.0.jar localhost 22 test password ls
+% java -jar target/SSH-client-sample.jar localhost 22 test password ls
 a
 hotate

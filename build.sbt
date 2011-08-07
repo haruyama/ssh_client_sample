@@ -12,3 +12,7 @@ libraryDependencies ++= Seq(
 )
 
 scalacOptions ++= Seq( "-deprecation",  "-unchecked" )
+
+seq(sbtassembly.Plugin.assemblySettings: _*)
+
+jarName in Assembly := "SSH-client-sample.jar"
