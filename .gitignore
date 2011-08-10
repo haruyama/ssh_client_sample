@@ -2,3 +2,5 @@ lib/*
 target
 tmp
 *.lock
+project/boot
+*~
