@@ -9,12 +9,6 @@ I confirm that this works for Debian sid's sshd "SSH-2.0-OpenSSH_5.8p1 Debian-4"
 
 This software is a public domain.
 
-* Prerequisite
-
-1. download Ganymed SSH-2 for Java Library via http://www.ganymed.ethz.ch/ssh2/ganymed-ssh2-build210.zip.
-2. unzip 'ganymed-ssh2-build210/ganymed-ssh2-build210.jar' from 'ganymed-ssh2-build210.zip'.
-3. move 'ganymed-ssh2-build210/ganymed-ssh2-build210.jar' to 'lib' directory.
-
 * Build
 
 use sbt 0.10.*(Simple Build Tool, https://github.com/harrah/xsbt/wiki).
@@ -47,10 +41,10 @@ hotate
 
 ...
 
-Or you can generate a jar and run scala command.
+Or you can generate a jar and run java command.
 
-% sbt package
+% sbt assembly:package
 ...
-% scala -cp lib/ganymed-ssh2-build210.jar target/scala-2.9.0.final/ssh-client-sample_2.9.0-1.0.jar localhost 22 test password ls
+% java -jar target/SSH-client-sample.jar localhost 22 test password ls
 a
 hotate
