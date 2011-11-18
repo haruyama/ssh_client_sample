@@ -4,3 +4,4 @@ tmp
 *.lock
 project/boot
 *~
+.history

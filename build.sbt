@@ -1,10 +1,12 @@
+import AssemblyKeys._ 
+
 name := "SSH client sample"
 
 organization := "org.unixuser"
 
 version := "1.0"
 
-scalaVersion := "2.9.0-1"
+scalaVersion := "2.9.1"
 
 libraryDependencies ++= Seq(
    "org.scalatest" %% "scalatest" % "1.6.1"
@@ -13,6 +15,7 @@ libraryDependencies ++= Seq(
 
 scalacOptions ++= Seq( "-deprecation",  "-unchecked" )
 
-seq(sbtassembly.Plugin.assemblySettings: _*)
 
-jarName in Assembly := "SSH-client-sample.jar"
+seq(assemblySettings: _*)
+
+jarName in assembly := "SSH-client-sample.jar"
